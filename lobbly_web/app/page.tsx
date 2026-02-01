@@ -106,12 +106,41 @@ export default function Home() {
   const chatInputRef = useRef<HTMLInputElement | null>(null);
   const claimSectionRef = useRef<HTMLElement | null>(null);
   const claimsDocRef = useRef<HTMLElement | null>(null);
+  const [attorneyMessages, setAttorneyMessages] = useState<
+    { id: number; role: "attorney" | "assistant"; text: string }[]
+  >([
+    {
+      id: 1,
+      role: "attorney",
+      text: "Add a dependent claim covering the sensor fusion step.",
+    },
+    {
+      id: 2,
+      role: "assistant",
+      text: "Noted. I’ll add a new branch for sensor fusion.",
+    },
+    {
+      id: 3,
+      role: "attorney",
+      text: "Also tighten the end-effector definition to avoid ambiguity.",
+    },
+  ]);
+  const [attorneyInput, setAttorneyInput] = useState("");
+  const [attorneyStatus, setAttorneyStatus] = useState<string | null>(null);
+  const [isPostingAttorney, setIsPostingAttorney] = useState(false);
+  const attorneyInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!isPosting) {
       chatInputRef.current?.focus();
     }
   }, [isPosting]);
+
+  useEffect(() => {
+    if (!isPostingAttorney) {
+      attorneyInputRef.current?.focus();
+    }
+  }, [isPostingAttorney]);
 
   const issues = useMemo(() => validateTree(treeText, true), [treeText]);
   const miroEmbedUrl = process.env.NEXT_PUBLIC_MIRO_EMBED_URL ?? "";
@@ -126,6 +155,35 @@ export default function Home() {
       return `${miroEmbedUrl}${separator}embedMode=view_only_without_ui`;
     }
   }, [miroEmbedUrl]);
+
+  const makeViewportUrl = (baseUrl: string, seed: number) => {
+    if (!baseUrl) return "";
+    const rng = (value: number) =>
+      Math.floor(((Math.sin(value) + 1) / 2) * 8000 - 4000);
+    const x = rng(seed + 1);
+    const y = rng(seed + 2);
+    const w = 1200 + Math.abs(rng(seed + 3)) % 1200;
+    const h = 800 + Math.abs(rng(seed + 4)) % 800;
+    const viewport = `${x},${y},${w},${h}`;
+
+    try {
+      const url = new URL(baseUrl);
+      url.searchParams.set("moveToViewport", viewport);
+      return url.toString();
+    } catch {
+      const separator = baseUrl.includes("?") ? "&" : "?";
+      return `${baseUrl}${separator}moveToViewport=${viewport}`;
+    }
+  };
+
+  const miroEmbedInnovation = useMemo(
+    () => makeViewportUrl(miroEmbedUrlViewOnly, Date.now()),
+    [miroEmbedUrlViewOnly]
+  );
+  const miroEmbedClaim = useMemo(
+    () => makeViewportUrl(miroEmbedUrlViewOnly, Date.now() + 4242),
+    [miroEmbedUrlViewOnly]
+  );
 
   const handleSyncToMiro = async () => {
     if (issues.length > 0 || isSyncing) return;
@@ -160,6 +218,40 @@ export default function Home() {
   const handleScrollToClaimsDoc = () => {
     if (!claimsDocRef.current) return;
     claimsDocRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handleAttorneySubmit = async () => {
+    const trimmed = attorneyInput.trim();
+    if (!trimmed || isPostingAttorney) return;
+
+    const messageId = Date.now();
+    setAttorneyMessages((prev) => [
+      ...prev,
+      { id: messageId, role: "attorney", text: trimmed },
+    ]);
+    setAttorneyInput("");
+    attorneyInputRef.current?.focus();
+    setIsPostingAttorney(true);
+    setAttorneyStatus("Adding node to claim graph...");
+
+    try {
+      const response = await fetch("/api/miro/shape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: trimmed }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setAttorneyStatus(data?.error ?? "Failed to add node.");
+      } else {
+        setAttorneyStatus("Node added to the claim graph.");
+      }
+    } catch (error) {
+      setAttorneyStatus("Network error. Check your Miro credentials.");
+    } finally {
+      setIsPostingAttorney(false);
+      attorneyInputRef.current?.focus();
+    }
   };
 
   const handleChatSubmit = async () => {
@@ -286,10 +378,10 @@ export default function Home() {
               </CardHeader>
               <CardContent className="flex min-h-0 flex-1 flex-col gap-4 text-sm text-slate-600">
                 <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                  {miroEmbedUrlViewOnly ? (
+                  {miroEmbedInnovation ? (
                     <iframe
                       title="Miro knowledge graph"
-                      src={miroEmbedUrlViewOnly}
+                      src={miroEmbedInnovation}
                       className="h-full w-full"
                       allow="fullscreen; clipboard-read; clipboard-write"
                     />
@@ -391,25 +483,51 @@ export default function Home() {
                 </CardHeader>
                 <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
                   <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto pr-2 text-sm text-slate-700">
-                    <div className="w-[88%] rounded-2xl bg-slate-100/80 px-4 py-3">
-                      Add a dependent claim covering the sensor fusion step.
-                    </div>
-                    <div className="ml-auto w-[86%] rounded-2xl bg-slate-900 px-4 py-3 text-slate-50">
-                      Noted. I’ll add a new branch for sensor fusion.
-                    </div>
-                    <div className="w-[84%] rounded-2xl bg-slate-100/80 px-4 py-3">
-                      Also tighten the end-effector definition to avoid ambiguity.
-                    </div>
+                    {attorneyMessages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={
+                          message.role === "assistant"
+                            ? "ml-auto w-[86%] rounded-2xl bg-slate-900 px-4 py-3 text-slate-50"
+                            : "w-[88%] rounded-2xl bg-slate-100/80 px-4 py-3"
+                        }
+                      >
+                        {message.text}
+                      </div>
+                    ))}
+                    {attorneyStatus && (
+                      <div className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-500">
+                        {attorneyStatus}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
                 <CardFooter className="flex flex-col items-stretch gap-2">
-                  <Button
-                    className="w-full"
-                    variant="secondary"
-                    onClick={handleScrollToClaimsDoc}
-                  >
-                    Generate Claims
-                  </Button>
+                  <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+                    <Input
+                      ref={attorneyInputRef}
+                      autoFocus
+                      value={attorneyInput}
+                      onChange={(event) => setAttorneyInput(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          handleAttorneySubmit();
+                        }
+                      }}
+                      placeholder="Add attorney feedback and press Enter..."
+                      className="flex-1"
+                      disabled={isPostingAttorney}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleAttorneySubmit}
+                      disabled={isPostingAttorney || !attorneyInput.trim()}
+                    >
+                      Send
+                    </Button>
+                  </div>
                 </CardFooter>
               </Card>
             </section>
@@ -424,13 +542,13 @@ export default function Home() {
                 </CardHeader>
                 <CardContent className="flex min-h-0 flex-1 flex-col gap-4 text-sm text-slate-600">
                   <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                    {miroEmbedUrlViewOnly ? (
-                      <iframe
-                        title="Claim graph"
-                        src={miroEmbedUrlViewOnly}
-                        className="h-full w-full"
-                        allow="fullscreen; clipboard-read; clipboard-write"
-                      />
+                  {miroEmbedClaim ? (
+                    <iframe
+                      title="Claim graph"
+                      src={miroEmbedClaim}
+                      className="h-full w-full"
+                      allow="fullscreen; clipboard-read; clipboard-write"
+                    />
                     ) : (
                       <div className="grid h-full place-items-center bg-slate-50 text-center text-sm text-slate-500">
                         <div>
