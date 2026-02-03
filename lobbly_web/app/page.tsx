@@ -87,17 +87,62 @@ export default function Home() {
     {
       id: 1,
       role: "assistant",
-      text: "Starting with the orchard robot tree. Anything missing in sensing?",
+      text: "Thanks for sharing the draft. Quick check: is this invention within the company’s approved R&D scope?",
     },
     {
       id: 2,
       role: "user",
-      text: "Add depth camera and end-effector tags so counsel can map device elements.",
+      text: "Yes, it’s part of our autonomous agriculture roadmap.",
     },
     {
       id: 3,
       role: "assistant",
-      text: "Got it. I’ll sync the updated nodes into the board.",
+      text: "Great. I’m also running a spam/duplicate check—this doesn’t match any prior submissions.",
+    },
+    {
+      id: 4,
+      role: "assistant",
+      text: "I found enough technical detail to start, but I need more on the sensing features.",
+    },
+    {
+      id: 5,
+      role: "assistant",
+      text: "Which sensors are mandatory, and which are optional variants?",
+    },
+    {
+      id: 6,
+      role: "user",
+      text: "Depth camera is mandatory; RGB and thermal are optional.",
+    },
+    {
+      id: 7,
+      role: "assistant",
+      text: "Noted. Are there any key entities or components that must be claimed (e.g., end-effector design, control module, power system)?",
+    },
+    {
+      id: 8,
+      role: "user",
+      text: "End-effector design and the control module are core. Power is standard.",
+    },
+    {
+      id: 9,
+      role: "assistant",
+      text: "Understood. I’ll clean and normalize the terms, then expand the graph with those entities.",
+    },
+    {
+      id: 10,
+      role: "assistant",
+      text: "Follow-up: any constraints on operating conditions (row spacing, lighting, fruit types)?",
+    },
+    {
+      id: 11,
+      role: "user",
+      text: "Works in 1.2–2.4m row spacing; targets apples and pears; must handle low-light conditions.",
+    },
+    {
+      id: 12,
+      role: "assistant",
+      text: "Great. I’ll add those constraints and generate the innovation graph now.",
     },
   ]);
   const [chatInput, setChatInput] = useState("");
@@ -290,26 +335,49 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#f2efe8] text-slate-950">
-      <div className="relative min-h-screen overflow-hidden">
+      <div className="relative h-screen overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,_#e1f0ff,_transparent_45%),radial-gradient(circle_at_85%_10%,_#fde6c7,_transparent_50%),linear-gradient(120deg,_#f7f4ed,_#ece7db)]" />
-        <div className="relative mx-auto grid min-h-screen max-w-7xl gap-8 px-6 py-8 md:px-10 lg:grid-cols-[1fr_1.2fr]">
-          <section className="flex min-h-0 flex-col gap-6">
-            <div className="flex flex-wrap items-center gap-3">
+        <div className="relative mx-auto grid h-full max-w-7xl gap-8 px-6 py-8 md:px-10 lg:grid-cols-[1fr_1.2fr]">
+          <section className="col-span-full flex flex-col gap-6 text-center">
+            <div className="flex flex-wrap items-center justify-center gap-3">
               <Badge className="bg-slate-900 text-slate-50">Innovation chat</Badge>
               <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
                 Lobbly innovation graph
               </span>
             </div>
-            <div>
+            <header className="space-y-3">
               <h1 className="text-3xl font-semibold leading-tight md:text-4xl">
                 Describe the innovation. Watch the graph grow.
               </h1>
-              <p className="mt-3 text-base text-slate-600">
+              <p className="text-base text-slate-600">
                 It asks questions to sharpen the idea and capture the key
                 information your invention needs.
               </p>
+            </header>
+            <div className="flex flex-wrap justify-center gap-2 text-sm text-slate-600">
+              {[
+                "Is it right for our company?",
+                "Spam/duplicate detection",
+                "Sufficient technical detail?",
+                "Entity extraction",
+                "Feature coverage check",
+                "Missing constraints scan",
+                "Prior art alignment",
+                "Clarifying follow-ups",
+                "Normalization & cleaning",
+                "Risk flagging",
+              ].map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full border border-slate-200 bg-white/80 px-3 py-1"
+                >
+                  {item}
+                </span>
+              ))}
             </div>
+          </section>
 
+          <section className="flex min-h-0 flex-col gap-6">
             <Card className="flex min-h-0 flex-1 flex-col border-slate-200/70 bg-white/90">
               <CardHeader>
                 <CardTitle>Innovation chat</CardTitle>
