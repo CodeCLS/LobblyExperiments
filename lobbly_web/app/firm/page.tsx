@@ -8,7 +8,10 @@ import {
   CheckCircle2,
   FileText,
   Filter,
+  Headset,
+  Receipt,
   Search,
+  Settings,
   Timer,
 } from "lucide-react";
 
@@ -73,154 +76,222 @@ const statusStyles: Record<string, string> = {
 };
 
 const priorityStyles: Record<string, string> = {
-  Komplex: "border-slate-900 bg-slate-900 text-white",
-  Standard: "border-slate-200 bg-slate-50 text-slate-700",
-  Einfach: "border-slate-200 bg-white text-slate-500",
+  Komplex: "border-rose-200 bg-rose-50 text-rose-700",
+  Standard: "border-amber-200 bg-amber-50 text-amber-700",
+  Einfach: "border-emerald-200 bg-emerald-50 text-emerald-700",
 };
 
 export default function FirmPage() {
   return (
-    <div className="min-h-screen bg-[#f7f7f8] text-slate-900">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8">
-        <header className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[16rem_minmax(0,1fr)_16rem]">
+        <aside className="hidden w-64 flex-col border-r border-border bg-card px-4 py-6 lg:flex">
+          <div className="space-y-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Kanzlei-Dashboard
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                Navigation
               </p>
-              <h1 className="text-2xl font-semibold text-slate-900">
-                Eingegangene Erfindungsmeldungen
-              </h1>
-              <p className="text-sm text-slate-500">
-                Überblick über alle Meldungen, Status und Prioritäten.
-              </p>
+              <p className="text-sm font-semibold text-foreground">Übersicht</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="space-y-2">
+              <Link
+                href="/firm"
+                className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold text-foreground"
+              >
+                Übersicht
+                <Badge className="border border-border bg-card text-foreground">
+                  Aktiv
+                </Badge>
+              </Link>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                Weitere Erfindungen
+              </p>
+              <div className="mt-2 space-y-2">
+                {disclosures.slice(0, 4).map((item) => (
+                  <Link
+                    key={item.id}
+                    href="/report"
+                    className="flex flex-col rounded-lg border border-border bg-card px-3 py-2 text-xs text-foreground hover:bg-background"
+                  >
+                    <span className="font-semibold text-foreground">
+                      {item.title}
+                    </span>
+                    <span>{item.id}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <div className="pt-2 text-xs text-muted-foreground">
+              Wechsel zur Detailansicht, um einzelne Meldungen zu prüfen.
+            </div>
+            <div className="mt-4 space-y-2">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground hover:bg-background"
+              >
+                <span className="flex items-center gap-2">
+                  <Receipt className="size-4 text-muted-foreground" />
+                  Abrechnung
+                </span>
+              </button>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground hover:bg-background"
+              >
+                <span className="flex items-center gap-2">
+                  <Headset className="size-4 text-muted-foreground" />
+                  Support
+                </span>
+              </button>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground hover:bg-background"
+              >
+                <span className="flex items-center gap-2">
+                  <Settings className="size-4 text-muted-foreground" />
+                  Einstellungen
+                </span>
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        <div className="flex w-full justify-center">
+          <div className="flex w-full max-w-7xl flex-col gap-6 px-8 py-8">
+          <header className="flex flex-col gap-4 rounded-2xl border border-border bg-card px-6 py-5 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                  Kanzlei-Dashboard
+                </p>
+                <h1 className="text-2xl font-semibold text-foreground">
+                  Eingegangene Erfindungsmeldungen
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Überblick über alle Meldungen, Status und Prioritäten.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-border bg-card text-foreground hover:bg-accent"
+                >
+                  <Filter className="mr-2 size-4" />
+                  Filter
+                </Button>
+                <Button type="button" className="bg-primary text-white hover:bg-primary/90">
+                  Eingabe-Link erstellen
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Meldungen, Erfinder oder Unternehmen suchen..."
+                  className="pl-9"
+                />
+              </div>
               <Button
                 type="button"
                 variant="outline"
-                className="border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                className="border-border bg-card text-foreground hover:bg-accent"
               >
-                <Filter className="mr-2 size-4" />
-                Filter
-              </Button>
-              <Button type="button" className="bg-slate-900 text-white hover:bg-slate-800">
-                Eingabe-Link erstellen
+                Export
               </Button>
             </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                placeholder="Meldungen, Erfinder oder Unternehmen suchen..."
-                className="pl-9"
-              />
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-            >
-              Export
-            </Button>
-          </div>
-        </header>
+          </header>
 
         <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-slate-200">
+          <Card className="border-border">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium text-slate-500">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Gesamt
               </CardTitle>
-              <FileText className="size-4 text-slate-400" />
+              <FileText className="size-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-semibold text-slate-900">
+              <div className="text-2xl font-semibold text-foreground">
                 {disclosures.length}
               </div>
-              <p className="text-xs text-slate-500">Aktive Meldungen</p>
+              <p className="text-xs text-muted-foreground">Aktive Meldungen</p>
             </CardContent>
           </Card>
-          <Card className="border-slate-200">
+          <Card className="border-border">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium text-slate-500">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Neu
               </CardTitle>
               <AlertCircle className="size-4 text-blue-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-semibold text-slate-900">2</div>
-              <p className="text-xs text-slate-500">Wartet auf Triage</p>
+              <div className="text-2xl font-semibold text-foreground">2</div>
+              <p className="text-xs text-muted-foreground">Wartet auf Triage</p>
             </CardContent>
           </Card>
-          <Card className="border-slate-200">
+          <Card className="border-border">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium text-slate-500">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 In Prüfung
               </CardTitle>
               <Timer className="size-4 text-amber-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-semibold text-slate-900">2</div>
-              <p className="text-xs text-slate-500">In Bearbeitung</p>
+              <div className="text-2xl font-semibold text-foreground">2</div>
+              <p className="text-xs text-muted-foreground">In Bearbeitung</p>
             </CardContent>
           </Card>
-          <Card className="border-slate-200">
+          <Card className="border-border">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium text-slate-500">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 Freigabe
               </CardTitle>
               <CheckCircle2 className="size-4 text-emerald-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-semibold text-slate-900">1</div>
-              <p className="text-xs text-slate-500">Bereit zur Freigabe</p>
+              <div className="text-2xl font-semibold text-foreground">1</div>
+              <p className="text-xs text-muted-foreground">Bereit zur Freigabe</p>
             </CardContent>
           </Card>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+          <section className="rounded-2xl border border-border bg-card shadow-sm">
+          <div className="flex items-center justify-between border-b border-border px-6 py-4">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">
+              <h2 className="text-lg font-semibold text-foreground">
                 Alle Meldungen
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 Letzte Aktualisierung heute
               </p>
             </div>
             <Button
               type="button"
               variant="outline"
-              className="border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+              className="border-border bg-card text-foreground hover:bg-accent"
             >
               Status aktualisieren
             </Button>
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-border">
             {disclosures.map((item) => (
               <div
                 key={item.id}
-                className="grid gap-4 px-6 py-4 md:grid-cols-[2fr_1.2fr_1.1fr_1fr_1fr]"
+                className="grid gap-4 px-6 py-4 md:grid-cols-[2fr_1.2fr_1fr_1.1fr_1fr_1fr]"
               >
                 <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-slate-900">
-                      {item.title}
-                    </p>
-                    <Badge
-                      className={`border ${priorityStyles[item.priority]}`}
-                    >
-                      {item.priority}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-slate-500">{item.id}</p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {item.title}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{item.id}</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {item.tags.map((tag) => (
                       <Badge
                         key={tag}
-                        className="border border-slate-200 bg-slate-50 text-slate-600"
+                        className="border border-border bg-background text-foreground"
                       >
                         {tag}
                       </Badge>
@@ -228,16 +299,24 @@ export default function FirmPage() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-400">
-                    Erfinder
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Komplexität
                   </p>
-                  <p className="text-sm font-medium text-slate-800">
-                    {item.inventor}
-                  </p>
-                  <p className="text-xs text-slate-500">{item.company}</p>
+                  <Badge className={`mt-1 border ${priorityStyles[item.priority]}`}>
+                    {item.priority}
+                  </Badge>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-400">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Erfinder
+                  </p>
+                  <p className="text-sm font-medium text-foreground">
+                    {item.inventor}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{item.company}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Status
                   </p>
                   <Badge
@@ -247,28 +326,31 @@ export default function FirmPage() {
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-400">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Eingegangen
                   </p>
-                  <p className="text-sm text-slate-700">{item.received}</p>
+                  <p className="text-sm text-foreground">{item.received}</p>
                 </div>
                 <div className="flex items-center gap-2 md:justify-end">
                   <Button
                     asChild
                     type="button"
                     variant="outline"
-                    className="border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                    className="border-border bg-card text-foreground hover:bg-accent"
                   >
                     <Link href="/report">Öffnen</Link>
                   </Button>
-                  <Button type="button" className="bg-slate-900 text-white hover:bg-slate-800">
+                  <Button type="button" className="bg-primary text-white hover:bg-primary/90">
                     Bearbeiten
                   </Button>
                 </div>
               </div>
             ))}
           </div>
-        </section>
+          </section>
+          </div>
+        </div>
+        <div className="hidden lg:block" />
       </div>
     </div>
   );

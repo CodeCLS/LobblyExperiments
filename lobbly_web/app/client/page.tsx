@@ -90,14 +90,14 @@ type WidgetPanelProps = {
 
 const TimelineAside = () => {
   return (
-    <aside className="hidden h-full flex-col border-r border-slate-200 bg-white lg:flex">
-      <div className="border-b border-slate-200 px-4 py-4">
+    <aside className="hidden h-full flex-col border-r border-border bg-card lg:flex">
+      <div className="border-b border-border px-4 py-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-slate-900">
+            <p className="text-sm font-semibold text-foreground">
               Aufnahme-Zeitleiste
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               Fortschritt der Anmeldeschritte
             </p>
           </div>
@@ -106,7 +106,7 @@ const TimelineAside = () => {
               type="button"
               variant="outline"
               size="icon"
-              className="border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+              className="border-border bg-card text-foreground hover:bg-accent"
               aria-label="Profil"
             >
               <User className="size-4" />
@@ -115,7 +115,7 @@ const TimelineAside = () => {
               type="button"
               variant="outline"
               size="icon"
-              className="border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+              className="border-border bg-card text-foreground hover:bg-accent"
               aria-label="Einstellungen"
             >
               <Settings className="size-4" />
@@ -128,24 +128,24 @@ const TimelineAside = () => {
           {intakeSteps.map((step, index) => (
             <li key={step.title} className="flex gap-3">
               <div className="flex flex-col items-center">
-                <div className="flex size-7 items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-semibold text-slate-700">
+                <div className="flex size-7 items-center justify-center rounded-full border border-border bg-card text-xs font-semibold text-foreground">
                   {index + 1}
                 </div>
                 {index !== intakeSteps.length - 1 && (
-                  <div className="mt-2 h-6 w-px bg-slate-200" />
+                  <div className="mt-2 h-6 w-px bg-border" />
                 )}
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-800">
+                <p className="text-sm font-semibold text-foreground">
                   {step.title}
                 </p>
-                <p className="text-xs text-slate-500">{step.detail}</p>
+                <p className="text-xs text-muted-foreground">{step.detail}</p>
               </div>
             </li>
           ))}
         </ol>
       </div>
-      <div className="border-t border-slate-200 px-4 py-4 text-xs text-slate-500">
+      <div className="border-t border-border px-4 py-4 text-xs text-muted-foreground">
         Patent-Aufnahme-Workflow
       </div>
     </aside>
@@ -154,12 +154,12 @@ const TimelineAside = () => {
 
 const HeaderBar = () => {
   return (
-    <header className="border-b border-slate-200 bg-white px-6 py-4">
+    <header className="border-b border-border bg-card px-6 py-4">
       <div className="mx-auto flex w-full max-w-4xl flex-col items-center text-center">
-        <h1 className="text-lg font-semibold text-slate-900">
+        <h1 className="text-lg font-semibold text-foreground">
           2spl Erfinderaufnahme
         </h1>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted-foreground">
           Erfindungsdetails erfassen und Anmeldebereitschaft bestätigen.
         </p>
       </div>
@@ -178,12 +178,12 @@ const WidgetPanel = ({
   if (kind === "dropzone") {
     return (
       <div>
-        <p className="text-base font-semibold text-slate-600">Dateiablage</p>
-        <div className="mt-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-base text-slate-600">
+        <p className="text-base font-semibold text-foreground">Dateiablage</p>
+        <div className="mt-3 rounded-lg border border-dashed border-border bg-background px-4 py-4 text-base text-foreground">
           Dateien hierher ziehen oder
           <button
             type="button"
-            className="ml-1 text-slate-900 underline"
+            className="ml-1 text-foreground underline"
             onClick={() => fileInputRef.current?.click()}
           >
             durchsuchen
@@ -197,14 +197,14 @@ const WidgetPanel = ({
   if (kind === "key-questions") {
     return (
       <div>
-        <p className="text-base font-semibold text-slate-600">Schlüsselfragen</p>
+        <p className="text-base font-semibold text-foreground">Schlüsselfragen</p>
         <div className="mt-3 space-y-2">
           {quickQuestions.map((question) => (
             <Button
               key={question}
               type="button"
               variant="outline"
-              className="w-full justify-start border-slate-200 bg-white text-left text-base text-slate-700 hover:bg-slate-50"
+              className="w-full justify-start border-border bg-card text-left text-base text-foreground hover:bg-background"
               onClick={() => onQuickInsert(question)}
             >
               {question}
@@ -218,8 +218,8 @@ const WidgetPanel = ({
   if (kind === "graph-snippet") {
     return (
       <div>
-        <p className="text-base font-semibold text-slate-600">Graph-Ausschnitt</p>
-        <div className="mt-3 grid h-28 place-items-center rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-500">
+        <p className="text-base font-semibold text-foreground">Graph-Ausschnitt</p>
+        <div className="mt-3 grid h-28 place-items-center rounded-lg border border-border bg-background text-sm text-muted-foreground">
           Knoten: 6 · Verbindungen: 9
         </div>
       </div>
@@ -229,14 +229,14 @@ const WidgetPanel = ({
   if (kind === "option-questions") {
     return (
       <div>
-        <p className="text-base font-semibold text-slate-600">Schnelloptionen</p>
-        <div className="mt-3 flex flex-wrap gap-2 text-base text-slate-600">
+        <p className="text-base font-semibold text-foreground">Schnelloptionen</p>
+        <div className="mt-3 flex flex-wrap gap-2 text-base text-foreground">
           {optionQuestions.map((question) => (
             <Button
               key={question}
               type="button"
               variant="outline"
-              className="border-slate-200 bg-white text-base text-slate-700 hover:bg-slate-50"
+              className="border-border bg-card text-base text-foreground hover:bg-background"
               onClick={() => onQuickInsert(question)}
             >
               {question}
@@ -250,8 +250,8 @@ const WidgetPanel = ({
   if (kind === "file-snippet") {
     return (
       <div>
-        <p className="text-base font-semibold text-slate-600">Datei-Ausschnitt</p>
-        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-4 text-base text-slate-600">
+        <p className="text-base font-semibold text-foreground">Datei-Ausschnitt</p>
+        <div className="mt-3 rounded-lg border border-border bg-background px-4 py-4 text-base text-foreground">
           Letzter Upload: {files[0] ?? "Noch keine Dateien"}
         </div>
       </div>
@@ -261,8 +261,8 @@ const WidgetPanel = ({
   if (kind === "sketch") {
     return (
       <div>
-        <p className="text-base font-semibold text-slate-600">Skizzenfeld</p>
-        <div className="mt-3 grid h-28 place-items-center rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-500">
+        <p className="text-base font-semibold text-foreground">Skizzenfeld</p>
+        <div className="mt-3 grid h-28 place-items-center rounded-lg border border-border bg-background text-sm text-muted-foreground">
           Zeichnen oder Diagramm hochladen
         </div>
       </div>
@@ -272,8 +272,8 @@ const WidgetPanel = ({
   if (kind === "missing-details") {
     return (
       <div>
-        <p className="text-base font-semibold text-slate-600">Fehlende Details</p>
-        <div className="mt-3 space-y-2 text-base text-slate-600">
+        <p className="text-base font-semibold text-foreground">Fehlende Details</p>
+        <div className="mt-3 space-y-2 text-base text-foreground">
           {[
             "Primärer Sensorik-Workflow",
             "Fehlerbehandlung",
@@ -281,7 +281,7 @@ const WidgetPanel = ({
           ].map((item) => (
             <div
               key={item}
-              className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
+              className="rounded-md border border-border bg-background px-3 py-2"
             >
               {item}
             </div>
@@ -293,11 +293,11 @@ const WidgetPanel = ({
 
   return (
     <div>
-      <p className="text-base font-semibold text-slate-600">Kurzzusammenfassung</p>
+      <p className="text-base font-semibold text-foreground">Kurzzusammenfassung</p>
       <div className="mt-2">
         <Textarea
           rows={5}
-          className="border-slate-200 bg-white text-base text-slate-700"
+          className="border-border bg-card text-base text-foreground"
           defaultValue="Fasse die Erfindung in 3–4 Sätzen zusammen..."
         />
       </div>
@@ -317,24 +317,24 @@ const MessageList = ({
 }: MessageListProps) => {
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#f7f7f8]">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background">
         {messages.map((message) => {
           const containerClass =
             message.role === "user" ? "justify-end" : "justify-start";
           const bubbleClass =
             message.role === "user"
-              ? "max-w-[78%] bg-white"
-              : "max-w-[85%] bg-white";
+              ? "max-w-[78%] bg-card"
+              : "max-w-[85%] bg-card";
 
           return (
             <div key={message.id} className="w-full px-4 py-3 text-sm">
               <div className={`flex w-full ${containerClass}`}>
                 <div
-                  className={`rounded-2xl border border-slate-200 px-6 py-5 text-slate-800 shadow-sm ${bubbleClass}`}
+                  className={`rounded-2xl border border-border px-6 py-5 text-foreground shadow-sm ${bubbleClass}`}
                 >
                   {message.text}
                   {message.widgetKind && (
-                    <div className="mt-4 max-h-80 overflow-auto border-t border-slate-200 pt-4 text-base">
+                    <div className="mt-4 max-h-80 overflow-auto border-t border-border pt-4 text-base">
                       <WidgetPanel
                         kind={message.widgetKind}
                         quickQuestions={quickQuestions}
@@ -351,9 +351,9 @@ const MessageList = ({
           );
         })}
         {isSending && (
-          <div className="px-4 py-3 text-xs text-slate-500">
+          <div className="px-4 py-3 text-xs text-muted-foreground">
             <div className="flex w-full justify-start">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2">
+              <div className="rounded-2xl border border-border bg-background px-4 py-2">
                 Senden...
               </div>
             </div>
@@ -378,13 +378,13 @@ const FooterBar = ({
   onFilePick,
 }: FooterBarProps) => {
   return (
-    <footer className="border-t border-slate-200 bg-white px-6 py-4">
+    <footer className="border-t border-border bg-card px-6 py-4">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
         <div className="flex flex-wrap gap-2">
           {files.map((file) => (
             <Badge
               key={file}
-              className="border border-slate-200 bg-slate-50 text-slate-700"
+              className="border border-border bg-background text-foreground"
             >
               {file}
             </Badge>
@@ -392,7 +392,7 @@ const FooterBar = ({
           {tools.map((tool) => (
             <Badge
               key={tool}
-              className="border border-slate-200 bg-white text-slate-700"
+              className="border border-border bg-card text-foreground"
             >
               {tool}
             </Badge>
@@ -410,7 +410,7 @@ const FooterBar = ({
               }
             }}
             placeholder="Erfindungsdetail beschreiben oder eine Frage stellen..."
-            className="h-18 flex-1 rounded-2xl border-slate-200 bg-white px-5 text-base text-slate-900 placeholder:text-slate-500"
+            className="h-18 flex-1 rounded-2xl border-border bg-card px-5 text-base text-foreground placeholder:text-muted-foreground"
             disabled={isSending}
           />
           <div className="flex items-center gap-2">
@@ -426,7 +426,7 @@ const FooterBar = ({
               variant="outline"
               size="icon"
               onClick={() => fileInputRef.current?.click()}
-              className="border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+              className="border-border bg-card text-foreground hover:bg-accent"
             >
               <Paperclip className="size-4" />
             </Button>
@@ -435,7 +435,7 @@ const FooterBar = ({
               variant="outline"
               size="icon"
               onClick={onAddTool}
-              className="border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+              className="border-border bg-card text-foreground hover:bg-accent"
             >
               <Wrench className="size-4" />
             </Button>
@@ -443,7 +443,7 @@ const FooterBar = ({
               type="button"
               onClick={onSend}
               disabled={!input.trim() || isSending}
-              className="bg-slate-900 text-white hover:bg-slate-800"
+              className="bg-primary text-white hover:bg-primary/90"
             >
               <Send className="size-4" />
               Senden
@@ -457,22 +457,22 @@ const FooterBar = ({
 
 const FilesAside = ({ files }: { files: string[] }) => {
   return (
-    <aside className="hidden h-full flex-col border-l border-slate-200 bg-white lg:flex">
-      <div className="border-b border-slate-200 px-4 py-4">
-        <p className="text-sm font-semibold text-slate-900">Hochgeladene Dateien</p>
-        <p className="text-xs text-slate-500">Alle Erfinder-Uploads</p>
+    <aside className="hidden h-full flex-col border-l border-border bg-card lg:flex">
+      <div className="border-b border-border px-4 py-4">
+        <p className="text-sm font-semibold text-foreground">Hochgeladene Dateien</p>
+        <p className="text-xs text-muted-foreground">Alle Erfinder-Uploads</p>
       </div>
       <div className="flex-1 overflow-auto px-4 py-4">
         {files.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-xs text-slate-500">
+          <div className="rounded-lg border border-dashed border-border bg-background px-3 py-4 text-xs text-muted-foreground">
             Noch keine Dateien hochgeladen.
           </div>
         ) : (
-          <ul className="space-y-2 text-sm text-slate-700">
+          <ul className="space-y-2 text-sm text-foreground">
             {files.map((file) => (
               <li
                 key={file}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2"
+                className="rounded-lg border border-border bg-card px-3 py-2"
               >
                 {file}
               </li>
@@ -480,7 +480,7 @@ const FilesAside = ({ files }: { files: string[] }) => {
           </ul>
         )}
       </div>
-      <div className="border-t border-slate-200 px-4 py-4 text-xs text-slate-500">
+      <div className="border-t border-border px-4 py-4 text-xs text-muted-foreground">
         Dateistatus-Updates erscheinen hier
       </div>
     </aside>
@@ -594,7 +594,7 @@ export default function ClientPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f7f8] text-slate-900">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="grid h-screen grid-cols-1 lg:grid-cols-[280px_1fr_280px]">
         <TimelineAside />
 
