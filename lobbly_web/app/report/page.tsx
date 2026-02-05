@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +11,7 @@ import {
   FileText,
   Headset,
   Link2,
+  X,
   Network,
   Receipt,
   Settings,
@@ -145,6 +149,27 @@ const reportInventions = [
 ];
 
 export default function ReportPage() {
+  const [questions, setQuestions] = useState<string[]>([]);
+  const [questionInput, setQuestionInput] = useState("");
+
+  const handleQuestionSubmit = () => {
+    const trimmed = questionInput.trim();
+    if (!trimmed) return;
+    const userText = trimmed;
+    setQuestions((prev) => [...prev, userText]);
+    setQuestionInput("");
+    window.setTimeout(() => {
+      setQuestions((prev) => [
+        ...prev,
+        "Verstanden. Ich prüfe die Angaben und melde mich mit Details zurück.",
+      ]);
+    }, 350);
+  };
+
+  const handleQuestionClose = () => {
+    setQuestions([]);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[16rem_minmax(0,1fr)_16rem]">
@@ -688,13 +713,63 @@ export default function ReportPage() {
         </div>
         <div className="hidden lg:block" />
       </div>
+      {questions.length > 0 && (
+        <div className="fixed bottom-0 left-1/2 z-40 w-[780px] -translate-x-1/2">
+          <div className="relative min-h-[180px] max-h-[50vh] overflow-y-auto rounded-t-2xl border border-border bg-card px-4 py-4 shadow-xl scroll-pb-40">
+            <button
+              type="button"
+              aria-label="Schließen"
+              onClick={handleQuestionClose}
+              className="sticky right-3 top-3 ml-auto rounded-full border border-border bg-background p-1 text-foreground hover:bg-accent"
+            >
+              <X className="size-4" />
+            </button>
+            <div className="space-y-3 pb-40 pt-10">
+              {questions.map((item, index) => {
+                const isUser = index % 2 === 0;
+                return (
+                  <div
+                    key={`${item}-${index}`}
+                    className={`flex w-full ${
+                      isUser ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[75%] rounded-xl border border-border px-3 py-2 text-sm ${
+                        isUser
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-background text-foreground"
+                      }`}
+                    >
+                      {item}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3">
         <input
           type="text"
+          value={questionInput}
+          onChange={(event) => setQuestionInput(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              handleQuestionSubmit();
+            }
+          }}
           placeholder="Frage zur Erfindungsmeldung stellen..."
           className="h-11 w-[416px] rounded-full border border-border bg-card px-5 text-sm text-foreground shadow-lg"
         />
-        <Button type="button" className="bg-primary text-white hover:bg-primary/90">
+        <Button
+          type="button"
+          onClick={handleQuestionSubmit}
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
+        >
           Enter
         </Button>
       </div>
