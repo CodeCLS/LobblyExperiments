@@ -1,7 +1,26 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Download } from "lucide-react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import {
+  Activity,
+  Archive,
+  Brain,
+  Boxes,
+  FileText,
+  GitBranch,
+  Layers,
+  MessageCircle,
+  Network,
+  NotebookPen,
+  Paperclip,
+  Radar,
+  Search,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  Table,
+  Wrench,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,734 +33,771 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-const starterTree = `Claim: Autonomous orchard robot :: overall system [root]
-> Perception stack :: detects fruit clusters [sensor]
->> Depth camera :: estimates distance [range]
-> Mobility base :: navigates rows [actuator]
-> Harvest arm :: picks fruit [actuator]
->> End-effector :: grips fruit without bruising [tool]`;
+const widgetCatalog = [
+  {
+    title: "Knowledge Graph",
+    description:
+      "Live map of claims, components, and how every uploaded file supports them.",
+    icon: Network,
+    tag: "Graph",
+  },
+  {
+    title: "Uploaded Files",
+    description:
+      "All inventor uploads with tags, provenance, and where each file is used.",
+    icon: Archive,
+    tag: "Files",
+  },
+  {
+    title: "Feature Coverage",
+    description:
+      "Feature-by-feature coverage across uploads, gaps, and required details.",
+    icon: Layers,
+    tag: "Coverage",
+  },
+  {
+    title: "Component Inventory",
+    description:
+      "Core modules, variants, and interfaces extracted from the uploads.",
+    icon: Boxes,
+    tag: "Components",
+  },
+  {
+    title: "Claim Draft Suggestions",
+    description:
+      "Draft claim language grounded in the inventor’s uploaded evidence.",
+    icon: NotebookPen,
+    tag: "Claims",
+  },
+  {
+    title: "Risks & Red Flags",
+    description:
+      "IP, enablement, and clarity risks flagged directly from the record.",
+    icon: ShieldCheck,
+    tag: "Risk",
+  },
+  {
+    title: "Ambiguities & Questions",
+    description:
+      "Unclear connections, missing definitions, and open questions to answer.",
+    icon: MessageCircle,
+    tag: "Clarity",
+  },
+  {
+    title: "Consistency Checks",
+    description:
+      "Conflicts across files, mismatched terminology, and missing references.",
+    icon: Activity,
+    tag: "Consistency",
+  },
+  {
+    title: "Evidence Map",
+    description:
+      "Every claim element linked to supporting sections of uploaded files.",
+    icon: GitBranch,
+    tag: "Evidence",
+  },
+  {
+    title: "Application Readiness",
+    description:
+      "What’s complete, what’s weak, and what must be added before filing.",
+    icon: Radar,
+    tag: "Readiness",
+  },
+  {
+    title: "Cleaned Application",
+    description:
+      "Normalized terms, cleaned language, and a cohesive invention narrative.",
+    icon: FileText,
+    tag: "Clean",
+  },
+  {
+    title: "Prior Art Signals",
+    description:
+      "Similarity alerts and novelty notes based on the inventor’s uploads.",
+    icon: Search,
+    tag: "Prior art",
+  },
+  {
+    title: "Summary Brief",
+    description:
+      "A concise, inventor-friendly summary of the invention as captured.",
+    icon: Brain,
+    tag: "Insights",
+  },
+  {
+    title: "Export Package",
+    description:
+      "Generate a clean filing package ready for counsel or direct filing.",
+    icon: Sparkles,
+    tag: "Export",
+  },
+];
 
-type Issue = { line: number; message: string };
+const starterMessages = [
+  {
+    id: 1,
+    role: "assistant",
+    text: "Welcome back. Ready to capture the full invention scope?",
+  },
+  {
+    id: 2,
+    role: "assistant",
+    text: "I'll guide you through claims, components, and novelty checks.",
+  },
+  {
+    id: 3,
+    role: "user",
+    text: "Start with the core claim and the must-have modules.",
+  },
+  {
+    id: 4,
+    role: "assistant",
+    text: "Got it. Which modules are mandatory vs optional variants?",
+  },
+];
 
-function validateTree(text: string, requiresClaimRoot: boolean): Issue[] {
-  const issues: Issue[] = [];
-  const lines = text.split(/\r?\n/);
-  let lastDepth = 0;
+const toolOptions = [
+  "Prior Art Scan",
+  "Claim Drafting",
+  "Component Registry",
+  "Risk & Compliance",
+  "Evidence Tracker",
+  "Competitor Radar",
+];
 
-  lines.forEach((raw, index) => {
-    const line = raw.trim();
-    if (!line) return;
+const widgetLayout: Record<string, string> = {
+  "Knowledge Graph": "md:col-span-2 md:row-span-2",
+  "Uploaded Files": "md:col-span-1 md:row-span-2",
+  "Feature Coverage": "md:col-span-1 md:row-span-2",
+  "Component Inventory": "md:col-span-1 md:row-span-2",
+  "Claim Draft Suggestions": "md:col-span-2 md:row-span-1",
+  "Risks & Red Flags": "md:col-span-1 md:row-span-2",
+  "Ambiguities & Questions": "md:col-span-2 md:row-span-1",
+  "Consistency Checks": "md:col-span-1 md:row-span-1",
+  "Evidence Map": "md:col-span-2 md:row-span-1",
+  "Application Readiness": "md:col-span-1 md:row-span-1",
+  "Cleaned Application": "md:col-span-1 md:row-span-1",
+  "Prior Art Signals": "md:col-span-1 md:row-span-1",
+  "Summary Brief": "md:col-span-1 md:row-span-1",
+  "Export Package": "md:col-span-1 md:row-span-1",
+};
 
-    const depthMatch = line.match(/^(>*)/);
-    const depth = depthMatch ? depthMatch[1].length : 0;
-    const content = line.replace(/^(>*)\s*/, "");
+const openQuestions = [
+  "Define the exact control loop for the core module.",
+  "Which parameters are essential for enablement?",
+  "List the minimum viable hardware configuration.",
+  "Clarify data inputs required for the key algorithm.",
+  "Provide failure modes and fallback behavior.",
+];
 
-    if (depth - lastDepth > 1) {
-      issues.push({
-        line: index + 1,
-        message: "Depth jumps by more than one level.",
-      });
-    }
-    lastDepth = depth;
+const detectedRisks = [
+  "Enablement detail is thin for the sensing workflow.",
+  "Terminology mismatch between diagram and narrative.",
+  "No explicit disclosure of best-mode parameters.",
+  "Potential prior art overlap in the core claim phrasing.",
+];
 
-    if (requiresClaimRoot && index === 0 && !content.startsWith("Claim:")) {
-      issues.push({
-        line: index + 1,
-        message: "Root must start with 'Claim:'.",
-      });
-    }
-
-    if (!content.includes("::")) {
-      issues.push({
-        line: index + 1,
-        message: "Missing '::' meaning annotation.",
-      });
-    }
-
-    const [labelPart] = content.split("::");
-    if (!labelPart?.replace(/^Claim:\s*/, "").trim()) {
-      issues.push({
-        line: index + 1,
-        message: "Missing a label before '::'.",
-      });
-    }
-
-    if (/\[[^\]]*$/.test(content)) {
-      issues.push({
-        line: index + 1,
-        message: "Unclosed [tag] bracket.",
-      });
-    }
-  });
-
-  return issues;
-}
+const clarityGaps = [
+  "Unclear linkage between optional modules and claims.",
+  "Missing definition for primary performance metric.",
+  "Ambiguous boundary between core and variant features.",
+];
 
 export default function Home() {
-  const [treeText] = useState(starterTree);
-  const [syncStatus, setSyncStatus] = useState<string | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [chatMessages, setChatMessages] = useState<
-    { id: number; role: "user" | "assistant"; text: string }[]
-  >([
-    {
-      id: 1,
-      role: "assistant",
-      text: "Thanks for sharing the draft. Quick check: is this invention within the company’s approved R&D scope?",
-    },
-    {
-      id: 2,
-      role: "user",
-      text: "Yes, it’s part of our autonomous agriculture roadmap.",
-    },
-    {
-      id: 3,
-      role: "assistant",
-      text: "Great. I’m also running a spam/duplicate check—this doesn’t match any prior submissions.",
-    },
-    {
-      id: 4,
-      role: "assistant",
-      text: "I found enough technical detail to start, but I need more on the sensing features.",
-    },
-    {
-      id: 5,
-      role: "assistant",
-      text: "Which sensors are mandatory, and which are optional variants?",
-    },
-    {
-      id: 6,
-      role: "user",
-      text: "Depth camera is mandatory; RGB and thermal are optional.",
-    },
-    {
-      id: 7,
-      role: "assistant",
-      text: "Noted. Are there any key entities or components that must be claimed (e.g., end-effector design, control module, power system)?",
-    },
-    {
-      id: 8,
-      role: "user",
-      text: "End-effector design and the control module are core. Power is standard.",
-    },
-    {
-      id: 9,
-      role: "assistant",
-      text: "Understood. I’ll clean and normalize the terms, then expand the graph with those entities.",
-    },
-    {
-      id: 10,
-      role: "assistant",
-      text: "Follow-up: any constraints on operating conditions (row spacing, lighting, fruit types)?",
-    },
-    {
-      id: 11,
-      role: "user",
-      text: "Works in 1.2–2.4m row spacing; targets apples and pears; must handle low-light conditions.",
-    },
-    {
-      id: 12,
-      role: "assistant",
-      text: "Great. I’ll add those constraints and generate the innovation graph now.",
-    },
+  const [messages, setMessages] = useState(starterMessages);
+  const [input, setInput] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [files, setFiles] = useState<string[]>([
+    "core-architecture.pdf",
+    "sensor-pipeline.png",
+    "bench-results.csv",
   ]);
-  const [chatInput, setChatInput] = useState("");
-  const [chatStatus, setChatStatus] = useState<string | null>(null);
-  const [isPosting, setIsPosting] = useState(false);
-  const chatInputRef = useRef<HTMLInputElement | null>(null);
-  const claimSectionRef = useRef<HTMLElement | null>(null);
-  const claimsDocRef = useRef<HTMLElement | null>(null);
-  const [attorneyMessages, setAttorneyMessages] = useState<
-    { id: number; role: "attorney" | "assistant"; text: string }[]
-  >([
-    {
-      id: 1,
-      role: "attorney",
-      text: "Add a dependent claim covering the sensor fusion step.",
-    },
-    {
-      id: 2,
-      role: "assistant",
-      text: "Noted. I’ll add a new branch for sensor fusion.",
-    },
-    {
-      id: 3,
-      role: "attorney",
-      text: "Also tighten the end-effector definition to avoid ambiguity.",
-    },
+  const [tools, setTools] = useState<string[]>([
+    "Prior Art Scan",
+    "Claim Drafting",
   ]);
-  const [attorneyInput, setAttorneyInput] = useState("");
-  const [attorneyStatus, setAttorneyStatus] = useState<string | null>(null);
-  const [isPostingAttorney, setIsPostingAttorney] = useState(false);
-  const attorneyInputRef = useRef<HTMLInputElement | null>(null);
+  const [widgets, setWidgets] = useState(widgetCatalog);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [expandedWidget, setExpandedWidget] = useState<string | null>(null);
+  const [toolIndex, setToolIndex] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleSend = () => {
+    const trimmed = input.trim();
+    if (!trimmed || isSending) return;
+
+    const newMessage = {
+      id: Date.now(),
+      role: "user" as const,
+      text: trimmed,
+    };
+
+    setMessages((prev) => [...prev, newMessage]);
+    setInput("");
+    setIsSending(true);
+
+    window.setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          role: "assistant" as const,
+          text: "Thanks. I mapped that into the claim tree and queued follow-ups.",
+        },
+      ]);
+      setIsSending(false);
+    }, 550);
+  };
+
+  const handleAddTool = () => {
+    const nextTool = toolOptions[toolIndex % toolOptions.length];
+    setTools((prev) => (prev.includes(nextTool) ? prev : [...prev, nextTool]));
+    setToolIndex((prev) => prev + 1);
+  };
+
+  const handleFilePick = (event: ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(event.target.files ?? []).map((file) => file.name);
+    if (picked.length) {
+      setFiles((prev) => [...prev, ...picked]);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   useEffect(() => {
-    if (!isPosting) {
-      chatInputRef.current?.focus();
+    if (!isSending) {
+      inputRef.current?.focus();
     }
-  }, [isPosting]);
+  }, [isSending]);
 
-  useEffect(() => {
-    if (!isPostingAttorney) {
-      attorneyInputRef.current?.focus();
-    }
-  }, [isPostingAttorney]);
-
-  const issues = useMemo(() => validateTree(treeText, true), [treeText]);
-  const miroEmbedUrl = process.env.NEXT_PUBLIC_MIRO_EMBED_URL ?? "";
-  const miroEmbedUrlViewOnly = useMemo(() => {
-    if (!miroEmbedUrl) return "";
-    try {
-      const url = new URL(miroEmbedUrl);
-      url.searchParams.set("embedMode", "view_only_without_ui");
-      return url.toString();
-    } catch {
-      const separator = miroEmbedUrl.includes("?") ? "&" : "?";
-      return `${miroEmbedUrl}${separator}embedMode=view_only_without_ui`;
-    }
-  }, [miroEmbedUrl]);
-
-  const makeViewportUrl = (baseUrl: string, seed: number) => {
-    if (!baseUrl) return "";
-    const rng = (value: number) =>
-      Math.floor(((Math.sin(value) + 1) / 2) * 8000 - 4000);
-    const x = rng(seed + 1);
-    const y = rng(seed + 2);
-    const w = 1200 + Math.abs(rng(seed + 3)) % 1200;
-    const h = 800 + Math.abs(rng(seed + 4)) % 800;
-    const viewport = `${x},${y},${w},${h}`;
-
-    try {
-      const url = new URL(baseUrl);
-      url.searchParams.set("moveToViewport", viewport);
-      return url.toString();
-    } catch {
-      const separator = baseUrl.includes("?") ? "&" : "?";
-      return `${baseUrl}${separator}moveToViewport=${viewport}`;
-    }
+  const handleDragStart = (index: number) => {
+    setDragIndex(index);
   };
 
-  const miroEmbedInnovation = useMemo(
-    () => makeViewportUrl(miroEmbedUrlViewOnly, Date.now()),
-    [miroEmbedUrlViewOnly]
+  const handleDragEnd = () => {
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (index: number) => {
+    if (dragIndex === null || dragIndex === index) {
+      setDragIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+    setWidgets((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(dragIndex, 1);
+      next.splice(index, 0, moved);
+      return next;
+    });
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const totalQuestions = 12;
+  const answeredQuestions = Math.min(
+    totalQuestions,
+    Math.max(0, messages.filter((message) => message.role === "user").length)
   );
-  const miroEmbedClaim = useMemo(
-    () => makeViewportUrl(miroEmbedUrlViewOnly, Date.now() + 4242),
-    [miroEmbedUrlViewOnly]
+  const progressPercent = Math.round(
+    (answeredQuestions / totalQuestions) * 100
   );
-
-  const handleSyncToMiro = async () => {
-    if (issues.length > 0 || isSyncing) return;
-    setIsSyncing(true);
-    setSyncStatus("Sending tree to Miro...");
-    try {
-      const response = await fetch("/api/miro/tree", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ treeText }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setSyncStatus(data?.error ?? "Failed to sync to Miro.");
-      } else {
-        setSyncStatus(
-          `Created ${data?.created ?? 0} shapes and ${data?.connectors ?? 0} connectors on the board.`
-        );
-      }
-    } catch (error) {
-      setSyncStatus("Network error. Check your Miro credentials and try again.");
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  const handleScrollToClaims = () => {
-    if (!claimSectionRef.current) return;
-    claimSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  const handleScrollToClaimsDoc = () => {
-    if (!claimsDocRef.current) return;
-    claimsDocRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  const handleAttorneySubmit = async () => {
-    const trimmed = attorneyInput.trim();
-    if (!trimmed || isPostingAttorney) return;
-
-    const messageId = Date.now();
-    setAttorneyMessages((prev) => [
-      ...prev,
-      { id: messageId, role: "attorney", text: trimmed },
-    ]);
-    setAttorneyInput("");
-    attorneyInputRef.current?.focus();
-    setIsPostingAttorney(true);
-    setAttorneyStatus("Adding node to claim graph...");
-
-    try {
-      const response = await fetch("/api/miro/shape", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: trimmed }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setAttorneyStatus(data?.error ?? "Failed to add node.");
-      } else {
-        setAttorneyStatus("Node added to the claim graph.");
-      }
-    } catch (error) {
-      setAttorneyStatus("Network error. Check your Miro credentials.");
-    } finally {
-      setIsPostingAttorney(false);
-      attorneyInputRef.current?.focus();
-    }
-  };
-
-  const handleChatSubmit = async () => {
-    const trimmed = chatInput.trim();
-    if (!trimmed || isPosting) return;
-
-    const messageId = Date.now();
-    setChatMessages((prev) => [
-      ...prev,
-      { id: messageId, role: "user", text: trimmed },
-    ]);
-    setChatInput("");
-    chatInputRef.current?.focus();
-    setIsPosting(true);
-    setChatStatus("Adding rectangle to Miro...");
-
-    try {
-      const response = await fetch("/api/miro/shape", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: trimmed }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setChatStatus(data?.error ?? "Failed to add rectangle.");
-      } else {
-        setChatStatus("Rectangle added to the board.");
-      }
-    } catch (error) {
-      setChatStatus("Network error. Check your Miro credentials.");
-    } finally {
-      setIsPosting(false);
-      chatInputRef.current?.focus();
-    }
-  };
+  const remainingQuestions = Math.max(
+    0,
+    totalQuestions - answeredQuestions
+  );
 
   return (
-    <div className="min-h-screen bg-[#f2efe8] text-slate-950">
-      <div className="relative h-screen overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,_#e1f0ff,_transparent_45%),radial-gradient(circle_at_85%_10%,_#fde6c7,_transparent_50%),linear-gradient(120deg,_#f7f4ed,_#ece7db)]" />
-        <div className="relative mx-auto grid h-full max-w-7xl gap-8 px-6 py-8 md:px-10 lg:grid-cols-[1fr_1.2fr]">
-          <section className="col-span-full flex flex-col gap-6 text-center">
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <Badge className="bg-slate-900 text-slate-50">Innovation chat</Badge>
-              <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
-                Lobbly innovation graph
-              </span>
-            </div>
-            <header className="space-y-3">
-              <h1 className="text-3xl font-semibold leading-tight md:text-4xl">
-                Describe the innovation. Watch the graph grow.
-              </h1>
-              <p className="text-base text-slate-600">
-                It asks questions to sharpen the idea and capture the key
-                information your invention needs.
-              </p>
-            </header>
-            <div className="flex flex-wrap justify-center gap-2 text-sm text-slate-600">
-              {[
-                "Is it right for our company?",
-                "Spam/duplicate detection",
-                "Sufficient technical detail?",
-                "Entity extraction",
-                "Feature coverage check",
-                "Missing constraints scan",
-                "Prior art alignment",
-                "Clarifying follow-ups",
-                "Normalization & cleaning",
-                "Risk flagging",
-              ].map((item) => (
-                <span
-                  key={item}
-                  className="rounded-full border border-slate-200 bg-white/80 px-3 py-1"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
-          </section>
-
-          <section className="flex min-h-0 flex-col gap-6">
-            <Card className="flex min-h-0 flex-1 flex-col border-slate-200/70 bg-white/90">
-              <CardHeader>
-                <CardTitle>Innovation chat</CardTitle>
-                <CardDescription>
-                  Answer prompts to grow the innovation graph.
+    <div className="min-h-screen bg-[#ede9e2] text-slate-900">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_12%_12%,_rgba(246,242,236,0.9),_transparent_55%),radial-gradient(circle_at_90%_0%,_rgba(215,210,202,0.6),_transparent_55%),linear-gradient(120deg,_rgba(237,233,226,0.8),_rgba(230,226,219,0.95))]" />
+      <main className="relative grid h-screen w-full gap-6 px-6 py-6 lg:grid-cols-2">
+        <section className="flex min-h-0 flex-col">
+          <Card className="flex min-h-0 flex-1 flex-col border-slate-300/70 bg-white/85 shadow-xl shadow-slate-300/40 backdrop-blur">
+            <CardHeader className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className="bg-slate-900 text-white">
+                  Inventor workspace
+                </Badge>
+              </div>
+              <div className="space-y-1">
+                <CardTitle className="text-2xl">Inventor Chat</CardTitle>
+                <CardDescription className="text-slate-600">
+                  Answer guided prompts so we can build a complete, clean, and
+                  defensible application.
                 </CardDescription>
-              </CardHeader>
-              <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
-                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto pr-2 text-sm text-slate-700">
-                  {chatMessages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={
-                        message.role === "user"
-                          ? "ml-auto w-[86%] rounded-2xl bg-slate-900 px-4 py-3 text-slate-50"
-                          : "w-[88%] rounded-2xl bg-slate-100/80 px-4 py-3"
-                      }
-                    >
-                      {message.text}
-                    </div>
-                  ))}
-                  {chatStatus && (
-                    <div className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-500">
-                      {chatStatus}
-                    </div>
-                  )}
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+                {[
+                  "Scope validation",
+                  "Claim dependencies",
+                  "Missing features",
+                  "Risk flags",
+                  "Novelty check",
+                ].map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-full border border-slate-300/60 bg-slate-50/80 px-3 py-1"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-slate-600">
+                  <span>Application completeness</span>
+                  <span>
+                    {progressPercent}% · {remainingQuestions} questions left
+                  </span>
                 </div>
-              </CardContent>
-              <CardFooter className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
-                  <Input
-                    ref={chatInputRef}
-                    autoFocus
-                    value={chatInput}
-                    onChange={(event) => setChatInput(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        handleChatSubmit();
-                      }
-                    }}
-                    placeholder="Type a message and press Enter..."
-                    className="flex-1"
-                    disabled={isPosting}
+                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200/70">
+                  <div
+                    className="h-full rounded-full bg-slate-900 transition-all"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
+              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto pr-2 text-sm">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={
+                      message.role === "user"
+                        ? "ml-auto w-[86%] rounded-2xl border border-slate-300/70 bg-slate-900 px-4 py-3 text-white"
+                        : "w-[88%] rounded-2xl border border-slate-300/70 bg-white px-4 py-3 text-slate-800"
+                    }
+                  >
+                    {message.text}
+                  </div>
+                ))}
+                {isSending && (
+                  <div className="w-fit rounded-full border border-slate-300/70 bg-slate-50 px-3 py-1 text-xs text-slate-600">
+                    Sending to the claim graph...
+                  </div>
+                )}
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-3">
+              <div className="flex flex-wrap gap-2">
+                {files.map((file) => (
+                  <Badge
+                    key={file}
+                    className="border border-slate-300/70 bg-slate-50 text-slate-700"
+                  >
+                    {file}
+                  </Badge>
+                ))}
+                {tools.map((tool) => (
+                  <Badge
+                    key={tool}
+                    className="border border-slate-300/70 bg-white text-slate-700"
+                  >
+                    {tool}
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+                <Input
+                  ref={inputRef}
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder="Describe the invention detail or ask a question..."
+                  className="flex-1 border-slate-300/70 bg-white text-slate-900 placeholder:text-slate-500"
+                  disabled={isSending}
+                />
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    onChange={handleFilePick}
+                    className="hidden"
                   />
                   <Button
-                    size="sm"
+                    type="button"
                     variant="outline"
-                    onClick={handleChatSubmit}
-                    disabled={isPosting || !chatInput.trim()}
+                    size="icon"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-slate-300/70 bg-white text-slate-700 hover:bg-slate-100"
                   >
+                    <Paperclip className="size-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleAddTool}
+                    className="border-slate-300/70 bg-white text-slate-700 hover:bg-slate-100"
+                  >
+                    <Wrench className="size-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleSend}
+                    disabled={!input.trim() || isSending}
+                    className="bg-slate-900 text-white hover:bg-slate-800"
+                  >
+                    <Send className="size-4" />
                     Send
                   </Button>
                 </div>
-              </CardFooter>
-            </Card>
-          </section>
-
-          <section className="flex min-h-0 flex-col">
-            <Card className="flex min-h-0 flex-1 flex-col border-slate-200/80 bg-white/95">
-              <CardHeader>
-                <CardTitle>Innovation graph</CardTitle>
-                <CardDescription>
-                  Live Miro board showing your evolving idea map.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex min-h-0 flex-1 flex-col gap-4 text-sm text-slate-600">
-                <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                  {miroEmbedInnovation ? (
-                    <iframe
-                      title="Miro knowledge graph"
-                      src={miroEmbedInnovation}
-                      className="h-full w-full"
-                      allow="fullscreen; clipboard-read; clipboard-write"
-                    />
-                  ) : (
-                    <div className="grid h-full place-items-center bg-slate-50 text-center text-sm text-slate-500">
-                      <div>
-                        <p className="font-semibold text-slate-700">
-                          Add your Miro live embed URL
-                        </p>
-                        <p>
-                          Set NEXT_PUBLIC_MIRO_EMBED_URL to see the board here.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                {syncStatus && (
-                  <p className="text-xs text-slate-500">{syncStatus}</p>
-                )}
-              </CardContent>
-              <CardFooter className="flex flex-col items-stretch gap-2">
-                <Button
-                  className="w-full"
-                  variant="secondary"
-                  onClick={handleScrollToClaims}
-                >
-                  Generate Claim Graph
-                </Button>
-              </CardFooter>
-            </Card>
-          </section>
-        </div>
-      </div>
-
-      <section className="relative border-t border-slate-200/70 bg-[#f3efe6]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,_#eef6ff,_transparent_55%),linear-gradient(120deg,_#f7f4ed,_#ece7db)]" />
-        <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-6 py-8 md:px-10">
-          <div className="flex flex-wrap items-center gap-3">
-            <Badge className="bg-slate-900 text-slate-50">Prior art</Badge>
-            <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
-              Research pipeline
-            </span>
-          </div>
-          <h2 className="text-2xl font-semibold text-slate-900 md:text-3xl">
-            We run prior art search, filtering, cleaning, and more.
-          </h2>
-          <div className="flex flex-wrap gap-2 text-sm text-slate-600">
-            {[
-              "Prior Art Search",
-              "Filtering",
-              "Cleaning",
-              "Clustering",
-              "Relevance scoring",
-              "Attorney annotations",
-            ].map((item) => (
-              <span
-                key={item}
-                className="rounded-full border border-slate-200 bg-white/80 px-3 py-1"
-              >
-                {item}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <div
-        ref={claimSectionRef}
-        className="relative min-h-screen border-t border-slate-200/70 bg-[#f5f1e7]"
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_20%,_#efe5ff,_transparent_45%),radial-gradient(circle_at_80%_10%,_#ffe9d3,_transparent_50%),linear-gradient(120deg,_#f9f6ef,_#f0e9dd)]" />
-        <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col gap-8 px-6 py-8 md:px-10">
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-wrap items-center gap-3">
-              <Badge className="bg-slate-900 text-slate-50">Claim review</Badge>
-              <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
-                Attorney feedback
-              </span>
-            </div>
-            <div>
-              <h2 className="text-3xl font-semibold leading-tight md:text-4xl">
-                Refine the claim graph with attorney corrections.
-              </h2>
-              <p className="mt-3 text-base text-slate-600">
-                Track objections, missing elements, and wording changes right next
-                to the graph.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid min-h-0 flex-1 gap-8 lg:grid-cols-[1fr_1.2fr]">
-            <section className="flex min-h-0 flex-col">
-              <Card className="flex min-h-0 flex-1 flex-col border-slate-200/70 bg-white/90">
-                <CardHeader>
-                  <CardTitle>Attorney notes</CardTitle>
-                  <CardDescription>
-                    Capture corrections before finalizing claims.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
-                  <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto pr-2 text-sm text-slate-700">
-                    {attorneyMessages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={
-                          message.role === "assistant"
-                            ? "ml-auto w-[86%] rounded-2xl bg-slate-900 px-4 py-3 text-slate-50"
-                            : "w-[88%] rounded-2xl bg-slate-100/80 px-4 py-3"
-                        }
-                      >
-                        {message.text}
-                      </div>
-                    ))}
-                    {attorneyStatus && (
-                      <div className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-500">
-                        {attorneyStatus}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-                <CardFooter className="flex flex-col items-stretch gap-2">
-                  <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
-                    <Input
-                      ref={attorneyInputRef}
-                      autoFocus
-                      value={attorneyInput}
-                      onChange={(event) => setAttorneyInput(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          handleAttorneySubmit();
-                        }
-                      }}
-                      placeholder="Add attorney feedback and press Enter..."
-                      className="flex-1"
-                      disabled={isPostingAttorney}
-                    />
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleAttorneySubmit}
-                      disabled={isPostingAttorney || !attorneyInput.trim()}
-                    >
-                      Send
-                    </Button>
-                  </div>
-                </CardFooter>
-              </Card>
-            </section>
-
-            <section className="flex min-h-0 flex-col">
-              <Card className="flex min-h-0 flex-1 flex-col border-slate-200/80 bg-white/95">
-                <CardHeader>
-                  <CardTitle>Claim graph</CardTitle>
-                  <CardDescription>
-                    Structured claims with attorney revisions applied.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex min-h-0 flex-1 flex-col gap-4 text-sm text-slate-600">
-                  <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                  {miroEmbedClaim ? (
-                    <iframe
-                      title="Claim graph"
-                      src={miroEmbedClaim}
-                      className="h-full w-full"
-                      allow="fullscreen; clipboard-read; clipboard-write"
-                    />
-                    ) : (
-                      <div className="grid h-full place-items-center bg-slate-50 text-center text-sm text-slate-500">
-                        <div>
-                          <p className="font-semibold text-slate-700">
-                            Add your Miro live embed URL
-                          </p>
-                          <p>
-                            Set NEXT_PUBLIC_MIRO_EMBED_URL to see the board here.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-                <CardFooter className="flex flex-col items-stretch gap-2">
-                  <Button
-                    className="w-full"
-                    variant="secondary"
-                    onClick={handleScrollToClaimsDoc}
-                  >
-                    Generate Claims
-                  </Button>
-                </CardFooter>
-              </Card>
-            </section>
-          </div>
-        </div>
-      </div>
-
-      <section
-        ref={claimsDocRef}
-        className="relative min-h-screen border-t border-slate-200/70 bg-[#f7f2ea]"
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,_#e7f3ff,_transparent_50%),radial-gradient(circle_at_85%_15%,_#ffe7d1,_transparent_45%),linear-gradient(120deg,_#fbf7f0,_#f1ebe0)]" />
-        <div className="relative mx-auto flex min-h-screen max-w-5xl flex-col gap-6 px-6 py-10 md:px-10">
-          <div className="flex flex-wrap items-center gap-3">
-            <Badge className="bg-slate-900 text-slate-50">Claim draft</Badge>
-            <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
-              Generated document
-            </span>
-          </div>
-          <div>
-            <h2 className="text-3xl font-semibold leading-tight md:text-4xl">
-              Draft claims for review.
-            </h2>
-            <p className="mt-3 text-base text-slate-600">
-              Dummy claims below illustrate the format that will be generated
-              from the innovation graph.
-            </p>
-          </div>
-
-          <Card className="border-slate-200/80 bg-white/95">
-            <CardHeader>
-              <CardTitle>Claims document</CardTitle>
-              <CardDescription>
-                Placeholder claims (auto-generated example).
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm text-slate-700">
-              <details className="rounded-2xl border border-slate-200 bg-white/90 p-4">
-                <summary className="cursor-pointer text-sm font-semibold text-slate-900">
-                  Patent description
-                </summary>
-                <p className="mt-3 text-sm text-slate-600">
-                  An autonomous orchard robot system that navigates crop rows,
-                  detects fruit clusters, and coordinates harvesting actions to
-                  minimize bruising while optimizing throughput.
-                </p>
-              </details>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
-                <p className="font-semibold text-slate-900">Claim 1</p>
-                <p className="mt-2">
-                  An autonomous orchard robot system comprising: a mobility base
-                  configured to navigate crop rows; a perception stack including
-                  a depth camera configured to detect fruit clusters; and a
-                  harvesting arm with an end-effector configured to grip fruit
-                  without bruising, wherein the system coordinates navigation
-                  and harvesting based on the detected fruit clusters.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
-                <p className="font-semibold text-slate-900">Claim 2</p>
-                <p className="mt-2">
-                  The system of claim 1, wherein the perception stack further
-                  includes a sensor fusion module that combines depth data with
-                  visual cues to determine ripeness prior to actuation of the
-                  harvesting arm.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
-                <p className="font-semibold text-slate-900">Claim 3</p>
-                <p className="mt-2">
-                  The system of claim 1, wherein the end-effector includes a
-                  compliant gripping surface and a force feedback sensor to
-                  maintain a target pressure range during fruit extraction.
-                </p>
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col items-stretch gap-2">
-              <div className="flex items-center gap-3 overflow-x-auto pb-2">
-                {[
-                  "Export to Microsoft Word",
-                  "Export to ClaimMaster",
-                  "Export to PatSnap",
-                  "Export to LexisNexis PatentOptimizer",
-                  "Export to Derwent",
-                  "Export to IP.com",
-                  "Export to Docket Navigator",
-                  "Export to The PatentBot",
-                ].map((label) => (
-                  <Button
-                    key={label}
-                    variant="default"
-                    className="whitespace-nowrap bg-slate-900 text-slate-50 hover:bg-slate-800"
-                  >
-                    <Download className="size-4" />
-                    {label}
-                  </Button>
-                ))}
               </div>
             </CardFooter>
           </Card>
-        </div>
-      </section>
+        </section>
+
+        <section className="flex min-h-0 flex-col">
+          <Card className="flex min-h-0 flex-1 flex-col border-slate-300/70 bg-white/85 shadow-xl shadow-slate-300/40 backdrop-blur">
+            <CardHeader className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-2xl">Invention Review</CardTitle>
+                  <CardDescription className="text-slate-600">
+                    Your uploads are analyzed into evidence, gaps, and risks to
+                    prepare a filing-ready application.
+                  </CardDescription>
+                </div>
+                <Badge className="bg-slate-50 text-slate-700">
+                  Review view
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+                {[
+                  "Drag to rearrange",
+                  "Pin critical views",
+                  "Export data",
+                  "Share with counsel",
+                ].map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-full border border-slate-300/60 bg-slate-50/80 px-3 py-1"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </CardHeader>
+            <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
+              <Card className="border-slate-300/70 bg-white">
+                <CardHeader className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base text-slate-900">
+                        Intake Review
+                      </CardTitle>
+                      <CardDescription className="text-xs text-slate-500">
+                        Open questions, risks, and clarity gaps derived from uploads.
+                      </CardDescription>
+                    </div>
+                    <Badge className="bg-slate-50 text-slate-700">
+                      Needs responses
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="grid gap-3 text-sm text-slate-600 md:grid-cols-3">
+                  <div className="rounded-lg bg-slate-50/80 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Open Questions
+                    </p>
+                    <ul className="mt-2 flex flex-wrap gap-2">
+                      {openQuestions.map((item) => (
+                        <li key={item} className="rounded-md bg-white px-3 py-2">
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="rounded-lg bg-slate-50/80 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Detected Risks
+                    </p>
+                    <ul className="mt-2 flex flex-wrap gap-2">
+                      {detectedRisks.map((item) => (
+                        <li key={item} className="rounded-md bg-white px-3 py-2">
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="rounded-lg bg-slate-50/80 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Clarity Gaps
+                    </p>
+                    <ul className="mt-2 flex flex-wrap gap-2">
+                      {clarityGaps.map((item) => (
+                        <li key={item} className="rounded-md bg-white px-3 py-2">
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+              <div className="grid min-h-0 flex-1 auto-rows-[minmax(140px,auto)] grid-flow-dense gap-3 overflow-auto pr-2 md:grid-cols-3">
+                {widgets.map((widget, index) => {
+                  const Icon = widget.icon;
+                  const isDragging = dragIndex === index;
+                  const isDragOver = dragOverIndex === index;
+                  const isExpanded = expandedWidget === widget.title;
+                  return (
+                    <Card
+                      key={widget.title}
+                      className={`flex h-full flex-col border-slate-300/70 bg-white transition-all duration-300 ease-out ${
+                        isDragging
+                          ? "scale-[0.98] opacity-70 shadow-lg shadow-slate-200/80"
+                          : "shadow-sm shadow-slate-200/60"
+                      } ${isDragOver ? "ring-2 ring-slate-900/60" : ""} ${
+                        widgetLayout[widget.title] ?? "md:col-span-1 md:row-span-1"
+                      }`}
+                      draggable
+                      onDragStart={() => handleDragStart(index)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={(event) => {
+                        event.preventDefault();
+                        setDragOverIndex(index);
+                      }}
+                      onDragEnter={() => setDragOverIndex(index)}
+                      onDragLeave={() => {
+                        if (dragOverIndex === index) {
+                          setDragOverIndex(null);
+                        }
+                      }}
+                      onDrop={() => handleDrop(index)}
+                      onClick={() =>
+                        setExpandedWidget((prev) =>
+                          prev === widget.title ? null : widget.title
+                        )
+                      }
+                    >
+                      <CardHeader className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="grid size-9 place-items-center rounded-xl bg-slate-100/80">
+                              <Icon className="size-5 text-slate-700" />
+                            </div>
+                            <div>
+                              <CardTitle className="text-base text-slate-900">
+                                {widget.title}
+                              </CardTitle>
+                              <CardDescription className="text-xs text-slate-500">
+                                {widget.tag}
+                              </CardDescription>
+                            </div>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="min-h-0 flex-1 text-sm text-slate-600">
+                        <p className="break-words leading-snug">
+                          {widget.description}
+                        </p>
+                        {isExpanded && (
+                          <div className="mt-3 max-h-52 overflow-auto rounded-lg border border-slate-300/70 bg-slate-50/80 p-3 text-xs text-slate-600">
+                            {widget.title === "Uploaded Files" && (
+                              <div className="space-y-2">
+                                {files.map((file) => (
+                                  <div
+                                    key={file}
+                                    className="flex items-center justify-between rounded-md bg-white px-3 py-2"
+                                  >
+                                    <span className="break-words">{file}</span>
+                                    <Badge className="bg-slate-100 text-slate-600">
+                                      Linked
+                                    </Badge>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {widget.title === "Knowledge Graph" && (
+                              <div className="space-y-2">
+                                {[
+                                  "Core claim node connected to 6 components",
+                                  "Evidence links: 9",
+                                  "Open dependencies: 3",
+                                ].map((item) => (
+                                  <div
+                                    key={item}
+                                    className="rounded-md bg-white px-3 py-2"
+                                  >
+                                    {item}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {widget.title === "Feature Coverage" && (
+                              <div className="space-y-2">
+                                {[
+                                  "Core module: complete",
+                                  "Interface spec: partial",
+                                  "Fallback behavior: missing",
+                                ].map((item) => (
+                                  <div
+                                    key={item}
+                                    className="rounded-md bg-white px-3 py-2"
+                                  >
+                                    <span className="break-words">{item}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {widget.title === "Risks & Red Flags" && (
+                              <div className="space-y-2">
+                                {detectedRisks.map((item) => (
+                                  <div
+                                    key={item}
+                                    className="rounded-md bg-white px-3 py-2"
+                                  >
+                                    {item}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {widget.title === "Ambiguities & Questions" && (
+                              <div className="space-y-2">
+                                {openQuestions.map((item) => (
+                                  <div
+                                    key={item}
+                                    className="rounded-md bg-white px-3 py-2"
+                                  >
+                                    {item}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {widget.title === "Consistency Checks" && (
+                              <div className="space-y-2">
+                                {[
+                                  "Term mismatch: sensor pipeline vs sensing stack",
+                                  "Diagram references missing appendix",
+                                  "Two modules share the same label",
+                                ].map((item) => (
+                                  <div
+                                    key={item}
+                                    className="rounded-md bg-white px-3 py-2"
+                                  >
+                                    {item}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {widget.title === "Evidence Map" && (
+                              <div className="space-y-2">
+                                {[
+                                  "Claim element A -> page 4, fig. 2",
+                                  "Claim element B -> spec section 3.1",
+                                  "Claim element C -> test data appendix",
+                                ].map((item) => (
+                                  <div
+                                    key={item}
+                                    className="rounded-md bg-white px-3 py-2"
+                                  >
+                                    {item}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {widget.title === "Application Readiness" && (
+                              <div className="space-y-2">
+                                {[
+                                  "Enablement: 72%",
+                                  "Claim clarity: 68%",
+                                  "Support coverage: 81%",
+                                ].map((item) => (
+                                  <div
+                                    key={item}
+                                    className="rounded-md bg-white px-3 py-2"
+                                  >
+                                    {item}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {widget.title === "Cleaned Application" && (
+                              <div className="space-y-2">
+                                {[
+                                  "Normalized 14 terms",
+                                  "Merged duplicate components",
+                                  "Removed speculative language",
+                                ].map((item) => (
+                                  <div
+                                    key={item}
+                                    className="rounded-md bg-white px-3 py-2"
+                                  >
+                                    {item}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {widget.title === "Prior Art Signals" && (
+                              <div className="space-y-2">
+                                {[
+                                  "Similarity to US20xx/xxxxxx at 0.71",
+                                  "Potential overlap in sensing claim",
+                                  "Novelty note added to actuator module",
+                                ].map((item) => (
+                                  <div
+                                    key={item}
+                                    className="rounded-md bg-white px-3 py-2"
+                                  >
+                                    {item}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {widget.title === "Summary Brief" && (
+                              <div className="space-y-2">
+                                {[
+                                  "Core value: automated detection + actuation",
+                                  "Primary novelty: adaptive control loop",
+                                  "Primary use: field-scale deployments",
+                                ].map((item) => (
+                                  <div
+                                    key={item}
+                                    className="rounded-md bg-white px-3 py-2"
+                                  >
+                                    {item}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {widget.title === "Export Package" && (
+                              <div className="space-y-2">
+                                {[
+                                  "Claims draft: prepared",
+                                  "Figures list: pending",
+                                  "Support matrix: prepared",
+                                ].map((item) => (
+                                  <div
+                                    key={item}
+                                    className="rounded-md bg-white px-3 py-2"
+                                  >
+                                    {item}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+      </main>
     </div>
   );
 }
-
