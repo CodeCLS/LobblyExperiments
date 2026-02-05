@@ -1,140 +1,29 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import {
-  Activity,
-  Archive,
-  Brain,
-  Boxes,
-  FileText,
-  GitBranch,
-  Layers,
-  MessageCircle,
-  Network,
-  NotebookPen,
-  Paperclip,
-  Radar,
-  Search,
-  Send,
-  ShieldCheck,
-  Sparkles,
-  Table,
-  Wrench,
-} from "lucide-react";
+import { Paperclip, Send, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
-const widgetCatalog = [
-  {
-    title: "Knowledge Graph",
-    description:
-      "Live map of claims, components, and how every uploaded file supports them.",
-    icon: Network,
-    tag: "Graph",
-  },
-  {
-    title: "Uploaded Files",
-    description:
-      "All inventor uploads with tags, provenance, and where each file is used.",
-    icon: Archive,
-    tag: "Files",
-  },
-  {
-    title: "Feature Coverage",
-    description:
-      "Feature-by-feature coverage across uploads, gaps, and required details.",
-    icon: Layers,
-    tag: "Coverage",
-  },
-  {
-    title: "Component Inventory",
-    description:
-      "Core modules, variants, and interfaces extracted from the uploads.",
-    icon: Boxes,
-    tag: "Components",
-  },
-  {
-    title: "Claim Draft Suggestions",
-    description:
-      "Draft claim language grounded in the inventor’s uploaded evidence.",
-    icon: NotebookPen,
-    tag: "Claims",
-  },
-  {
-    title: "Risks & Red Flags",
-    description:
-      "IP, enablement, and clarity risks flagged directly from the record.",
-    icon: ShieldCheck,
-    tag: "Risk",
-  },
-  {
-    title: "Ambiguities & Questions",
-    description:
-      "Unclear connections, missing definitions, and open questions to answer.",
-    icon: MessageCircle,
-    tag: "Clarity",
-  },
-  {
-    title: "Consistency Checks",
-    description:
-      "Conflicts across files, mismatched terminology, and missing references.",
-    icon: Activity,
-    tag: "Consistency",
-  },
-  {
-    title: "Evidence Map",
-    description:
-      "Every claim element linked to supporting sections of uploaded files.",
-    icon: GitBranch,
-    tag: "Evidence",
-  },
-  {
-    title: "Application Readiness",
-    description:
-      "What’s complete, what’s weak, and what must be added before filing.",
-    icon: Radar,
-    tag: "Readiness",
-  },
-  {
-    title: "Cleaned Application",
-    description:
-      "Normalized terms, cleaned language, and a cohesive invention narrative.",
-    icon: FileText,
-    tag: "Clean",
-  },
-  {
-    title: "Prior Art Signals",
-    description:
-      "Similarity alerts and novelty notes based on the inventor’s uploads.",
-    icon: Search,
-    tag: "Prior art",
-  },
-  {
-    title: "Summary Brief",
-    description:
-      "A concise, inventor-friendly summary of the invention as captured.",
-    icon: Brain,
-    tag: "Insights",
-  },
-  {
-    title: "Export Package",
-    description:
-      "Generate a clean filing package ready for counsel or direct filing.",
-    icon: Sparkles,
-    tag: "Export",
-  },
-];
+type ChatMessage = {
+  id: number;
+  role: "user" | "assistant";
+  text?: string;
+  widgetKind?:
+    | "dropzone"
+    | "key-questions"
+    | "graph-snippet"
+    | "option-questions"
+    | "file-snippet"
+    | "sketch"
+    | "missing-details"
+    | "quick-summary";
+};
 
-const starterMessages = [
+const starterMessages: ChatMessage[] = [
   {
     id: 1,
     role: "assistant",
@@ -166,64 +55,454 @@ const toolOptions = [
   "Competitor Radar",
 ];
 
-const widgetLayout: Record<string, string> = {
-  "Knowledge Graph": "md:col-span-2 md:row-span-2",
-  "Uploaded Files": "md:col-span-1 md:row-span-2",
-  "Feature Coverage": "md:col-span-1 md:row-span-2",
-  "Component Inventory": "md:col-span-1 md:row-span-2",
-  "Claim Draft Suggestions": "md:col-span-2 md:row-span-1",
-  "Risks & Red Flags": "md:col-span-1 md:row-span-2",
-  "Ambiguities & Questions": "md:col-span-2 md:row-span-1",
-  "Consistency Checks": "md:col-span-1 md:row-span-1",
-  "Evidence Map": "md:col-span-2 md:row-span-1",
-  "Application Readiness": "md:col-span-1 md:row-span-1",
-  "Cleaned Application": "md:col-span-1 md:row-span-1",
-  "Prior Art Signals": "md:col-span-1 md:row-span-1",
-  "Summary Brief": "md:col-span-1 md:row-span-1",
-  "Export Package": "md:col-span-1 md:row-span-1",
+const intakeSteps = [
+  { title: "Data intake", detail: "Collect invention summary and uploads." },
+  { title: "Initial questions", detail: "Clarify scope and core claims." },
+  { title: "Risk questions", detail: "Surface enablement and novelty risks." },
+  { title: "Feature questions", detail: "Ensure complete feature coverage." },
+  { title: "Prior art search", detail: "Check overlap and novelty signals." },
+  { title: "Clean & normalize", detail: "Unify terms and remove ambiguity." },
+  { title: "Filing readiness", detail: "Prepare final package for counsel." },
+];
+
+type MessageListProps = {
+  messages: ChatMessage[];
+  isSending: boolean;
+  endOfMessagesRef: React.RefObject<HTMLDivElement>;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  quickQuestions: string[];
+  optionQuestions: string[];
+  files: string[];
+  onQuickInsert: (text: string) => void;
 };
 
-const openQuestions = [
-  "Define the exact control loop for the core module.",
-  "Which parameters are essential for enablement?",
-  "List the minimum viable hardware configuration.",
-  "Clarify data inputs required for the key algorithm.",
-  "Provide failure modes and fallback behavior.",
-];
+type FooterBarProps = {
+  files: string[];
+  tools: string[];
+  input: string;
+  isSending: boolean;
+  inputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  onInputChange: (value: string) => void;
+  onSend: () => void;
+  onAddTool: () => void;
+  onFilePick: (event: ChangeEvent<HTMLInputElement>) => void;
+};
 
-const detectedRisks = [
-  "Enablement detail is thin for the sensing workflow.",
-  "Terminology mismatch between diagram and narrative.",
-  "No explicit disclosure of best-mode parameters.",
-  "Potential prior art overlap in the core claim phrasing.",
-];
+type WidgetPanelProps = {
+  kind: NonNullable<ChatMessage["widgetKind"]>;
+  quickQuestions: string[];
+  optionQuestions: string[];
+  files: string[];
+  onQuickInsert: (text: string) => void;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+};
 
-const clarityGaps = [
-  "Unclear linkage between optional modules and claims.",
-  "Missing definition for primary performance metric.",
-  "Ambiguous boundary between core and variant features.",
-];
+const TimelineAside = () => {
+  return (
+    <aside className="hidden h-full flex-col border-r border-slate-200 bg-white lg:flex">
+      <div className="border-b border-slate-200 px-4 py-4">
+        <p className="text-sm font-semibold text-slate-900">Intake Timeline</p>
+        <p className="text-xs text-slate-500">Progress through filing steps</p>
+      </div>
+      <div className="flex-1 overflow-auto px-4 py-4">
+        <ol className="space-y-4">
+          {intakeSteps.map((step, index) => (
+            <li key={step.title} className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <div className="flex size-7 items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-semibold text-slate-700">
+                  {index + 1}
+                </div>
+                {index !== intakeSteps.length - 1 && (
+                  <div className="mt-2 h-6 w-px bg-slate-200" />
+                )}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-800">
+                  {step.title}
+                </p>
+                <p className="text-xs text-slate-500">{step.detail}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <div className="border-t border-slate-200 px-4 py-4 text-xs text-slate-500">
+        Patent intake workflow
+      </div>
+    </aside>
+  );
+};
+
+const HeaderBar = () => {
+  return (
+    <header className="border-b border-slate-200 bg-white px-6 py-4">
+      <div className="mx-auto flex w-full max-w-4xl items-center justify-between">
+        <div>
+          <h1 className="text-lg font-semibold text-slate-900">
+            Inventor Chat
+          </h1>
+          <p className="text-xs text-slate-500">
+            Capture invention details and confirm filing readiness.
+          </p>
+        </div>
+        <Badge className="bg-slate-900 text-white">Invention intake</Badge>
+      </div>
+    </header>
+  );
+};
+
+const WidgetPanel = ({
+  kind,
+  quickQuestions,
+  optionQuestions,
+  files,
+  onQuickInsert,
+  fileInputRef,
+}: WidgetPanelProps) => {
+  if (kind === "dropzone") {
+    return (
+      <div>
+        <p className="text-base font-semibold text-slate-600">File dropzone</p>
+        <div className="mt-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-base text-slate-600">
+          Drag files here or
+          <button
+            type="button"
+            className="ml-1 text-slate-900 underline"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            browse
+          </button>
+          .
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "key-questions") {
+    return (
+      <div>
+        <p className="text-base font-semibold text-slate-600">Key questions</p>
+        <div className="mt-3 space-y-2">
+          {quickQuestions.map((question) => (
+            <Button
+              key={question}
+              type="button"
+              variant="outline"
+              className="w-full justify-start border-slate-200 bg-white text-left text-base text-slate-700 hover:bg-slate-50"
+              onClick={() => onQuickInsert(question)}
+            >
+              {question}
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "graph-snippet") {
+    return (
+      <div>
+        <p className="text-base font-semibold text-slate-600">Graph snippet</p>
+        <div className="mt-3 grid h-28 place-items-center rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-500">
+          Nodes: 6 · Links: 9
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "option-questions") {
+    return (
+      <div>
+        <p className="text-base font-semibold text-slate-600">Quick options</p>
+        <div className="mt-3 flex flex-wrap gap-2 text-base text-slate-600">
+          {optionQuestions.map((question) => (
+            <Button
+              key={question}
+              type="button"
+              variant="outline"
+              className="border-slate-200 bg-white text-base text-slate-700 hover:bg-slate-50"
+              onClick={() => onQuickInsert(question)}
+            >
+              {question}
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "file-snippet") {
+    return (
+      <div>
+        <p className="text-base font-semibold text-slate-600">File snippet</p>
+        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-4 text-base text-slate-600">
+          Latest upload: {files[0] ?? "No files yet"}
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "sketch") {
+    return (
+      <div>
+        <p className="text-base font-semibold text-slate-600">Sketch pad</p>
+        <div className="mt-3 grid h-28 place-items-center rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-500">
+          Draw or upload a diagram
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "missing-details") {
+    return (
+      <div>
+        <p className="text-base font-semibold text-slate-600">Missing details</p>
+        <div className="mt-3 space-y-2 text-base text-slate-600">
+          {[
+            "Primary sensing workflow",
+            "Failure handling",
+            "Operating constraints",
+          ].map((item) => (
+            <div
+              key={item}
+              className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
+            >
+              {item}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p className="text-base font-semibold text-slate-600">Quick summary</p>
+      <div className="mt-2">
+        <Textarea
+          rows={5}
+          className="border-slate-200 bg-white text-base text-slate-700"
+          defaultValue="Summarize the invention in 3-4 sentences..."
+        />
+      </div>
+    </div>
+  );
+};
+
+const MessageList = ({
+  messages,
+  isSending,
+  endOfMessagesRef,
+  fileInputRef,
+  quickQuestions,
+  optionQuestions,
+  files,
+  onQuickInsert,
+}: MessageListProps) => {
+  return (
+    <section className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#f7f7f8]">
+        {messages.map((message) => {
+          const containerClass =
+            message.role === "user" ? "justify-end" : "justify-start";
+          const bubbleClass =
+            message.role === "user"
+              ? "max-w-[78%] bg-white"
+              : "max-w-[85%] bg-white";
+
+          return (
+            <div key={message.id} className="w-full px-4 py-3 text-sm">
+              <div className={`flex w-full ${containerClass}`}>
+                <div
+                  className={`rounded-2xl border border-slate-200 px-6 py-5 text-slate-800 shadow-sm ${bubbleClass}`}
+                >
+                  {message.text}
+                  {message.widgetKind && (
+                    <div className="mt-4 max-h-80 overflow-auto border-t border-slate-200 pt-4 text-base">
+                      <WidgetPanel
+                        kind={message.widgetKind}
+                        quickQuestions={quickQuestions}
+                        optionQuestions={optionQuestions}
+                        files={files}
+                        onQuickInsert={onQuickInsert}
+                        fileInputRef={fileInputRef}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {isSending && (
+          <div className="px-4 py-3 text-xs text-slate-500">
+            <div className="flex w-full justify-start">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2">
+                Sending...
+              </div>
+            </div>
+          </div>
+        )}
+        <div ref={endOfMessagesRef} />
+      </div>
+    </section>
+  );
+};
+
+const FooterBar = ({
+  files,
+  tools,
+  input,
+  isSending,
+  inputRef,
+  fileInputRef,
+  onInputChange,
+  onSend,
+  onAddTool,
+  onFilePick,
+}: FooterBarProps) => {
+  return (
+    <footer className="border-t border-slate-200 bg-white px-6 py-4">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
+        <div className="flex flex-wrap gap-2">
+          {files.map((file) => (
+            <Badge
+              key={file}
+              className="border border-slate-200 bg-slate-50 text-slate-700"
+            >
+              {file}
+            </Badge>
+          ))}
+          {tools.map((tool) => (
+            <Badge
+              key={tool}
+              className="border border-slate-200 bg-white text-slate-700"
+            >
+              {tool}
+            </Badge>
+          ))}
+        </div>
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+          <Input
+            ref={inputRef}
+            value={input}
+            onChange={(event) => onInputChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                onSend();
+              }
+            }}
+            placeholder="Describe the invention detail or ask a question..."
+            className="h-18 flex-1 rounded-2xl border-slate-200 bg-white px-5 text-base text-slate-900 placeholder:text-slate-500"
+            disabled={isSending}
+          />
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              onChange={onFilePick}
+              className="hidden"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              className="border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+            >
+              <Paperclip className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={onAddTool}
+              className="border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+            >
+              <Wrench className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              onClick={onSend}
+              disabled={!input.trim() || isSending}
+              className="bg-slate-900 text-white hover:bg-slate-800"
+            >
+              <Send className="size-4" />
+              Send
+            </Button>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+};
+
+const FilesAside = ({ files }: { files: string[] }) => {
+  return (
+    <aside className="hidden h-full flex-col border-l border-slate-200 bg-white lg:flex">
+      <div className="border-b border-slate-200 px-4 py-4">
+        <p className="text-sm font-semibold text-slate-900">Uploaded Files</p>
+        <p className="text-xs text-slate-500">All inventor uploads</p>
+      </div>
+      <div className="flex-1 overflow-auto px-4 py-4">
+        {files.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-xs text-slate-500">
+            No files uploaded yet.
+          </div>
+        ) : (
+          <ul className="space-y-2 text-sm text-slate-700">
+            {files.map((file) => (
+              <li
+                key={file}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2"
+              >
+                {file}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div className="border-t border-slate-200 px-4 py-4 text-xs text-slate-500">
+        File status updates appear here
+      </div>
+    </aside>
+  );
+};
 
 export default function Home() {
-  const [messages, setMessages] = useState(starterMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>(starterMessages);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [files, setFiles] = useState<string[]>([
-    "core-architecture.pdf",
-    "sensor-pipeline.png",
-    "bench-results.csv",
-  ]);
-  const [tools, setTools] = useState<string[]>([
-    "Prior Art Scan",
-    "Claim Drafting",
-  ]);
-  const [widgets, setWidgets] = useState(widgetCatalog);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [expandedWidget, setExpandedWidget] = useState<string | null>(null);
+  const [files, setFiles] = useState<string[]>([]);
+  const [tools, setTools] = useState<string[]>([]);
   const [toolIndex, setToolIndex] = useState(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const endOfMessagesRef = useRef<HTMLDivElement | null>(null);
+
+  const widgetKinds: ChatMessage["widgetKind"][] = [
+    "dropzone",
+    "key-questions",
+    "graph-snippet",
+    "option-questions",
+    "file-snippet",
+    "sketch",
+    "missing-details",
+    "quick-summary",
+  ];
+
+  const createWidgetMessage = (): ChatMessage => {
+    const randomKind =
+      widgetKinds[Math.floor(Math.random() * widgetKinds.length)];
+    return {
+      id: Date.now() + 2,
+      role: "assistant",
+      widgetKind: randomKind,
+    };
+  };
 
   const handleSend = () => {
     const trimmed = input.trim();
@@ -244,9 +523,10 @@ export default function Home() {
         ...prev,
         {
           id: Date.now() + 1,
-          role: "assistant" as const,
+          role: "assistant",
           text: "Thanks. I mapped that into the claim tree and queued follow-ups.",
         },
+        createWidgetMessage(),
       ]);
       setIsSending(false);
     }, 550);
@@ -274,530 +554,63 @@ export default function Home() {
     }
   }, [isSending]);
 
-  const handleDragStart = (index: number) => {
-    setDragIndex(index);
-  };
-
-  const handleDragEnd = () => {
-    setDragIndex(null);
-    setDragOverIndex(null);
-  };
-
-  const handleDrop = (index: number) => {
-    if (dragIndex === null || dragIndex === index) {
-      setDragIndex(null);
-      setDragOverIndex(null);
-      return;
-    }
-    setWidgets((prev) => {
-      const next = [...prev];
-      const [moved] = next.splice(dragIndex, 1);
-      next.splice(index, 0, moved);
-      return next;
+  useEffect(() => {
+    endOfMessagesRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
     });
-    setDragIndex(null);
-    setDragOverIndex(null);
-  };
+  }, [messages, isSending]);
 
-  const totalQuestions = 12;
-  const answeredQuestions = Math.min(
-    totalQuestions,
-    Math.max(0, messages.filter((message) => message.role === "user").length)
-  );
-  const progressPercent = Math.round(
-    (answeredQuestions / totalQuestions) * 100
-  );
-  const remainingQuestions = Math.max(
-    0,
-    totalQuestions - answeredQuestions
-  );
+  const quickQuestions = [
+    "What is the core technical problem being solved?",
+    "Which components are essential vs optional variants?",
+    "What makes this invention novel over prior art?",
+  ];
+
+  const optionQuestions = [
+    "Does it require hardware?",
+    "Is there a software algorithm?",
+    "Any safety or regulatory constraints?",
+  ];
+
+  const handleQuickInsert = (text: string) => {
+    setInput((prev) => (prev ? `${prev} ${text}` : text));
+    inputRef.current?.focus();
+  };
 
   return (
-    <div className="min-h-screen bg-[#ede9e2] text-slate-900">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_12%_12%,_rgba(246,242,236,0.9),_transparent_55%),radial-gradient(circle_at_90%_0%,_rgba(215,210,202,0.6),_transparent_55%),linear-gradient(120deg,_rgba(237,233,226,0.8),_rgba(230,226,219,0.95))]" />
-      <main className="relative grid h-screen w-full gap-6 px-6 py-6 lg:grid-cols-2">
-        <section className="flex min-h-0 flex-col">
-          <Card className="flex min-h-0 flex-1 flex-col border-slate-300/70 bg-white/85 shadow-xl shadow-slate-300/40 backdrop-blur">
-            <CardHeader className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge className="bg-slate-900 text-white">
-                  Inventor workspace
-                </Badge>
-              </div>
-              <div className="space-y-1">
-                <CardTitle className="text-2xl">Inventor Chat</CardTitle>
-                <CardDescription className="text-slate-600">
-                  Answer guided prompts so we can build a complete, clean, and
-                  defensible application.
-                </CardDescription>
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-                {[
-                  "Scope validation",
-                  "Claim dependencies",
-                  "Missing features",
-                  "Risk flags",
-                  "Novelty check",
-                ].map((item) => (
-                  <span
-                    key={item}
-                    className="rounded-full border border-slate-300/60 bg-slate-50/80 px-3 py-1"
-                  >
-                    {item}
-                  </span>
-                ))}
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-slate-600">
-                  <span>Application completeness</span>
-                  <span>
-                    {progressPercent}% · {remainingQuestions} questions left
-                  </span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200/70">
-                  <div
-                    className="h-full rounded-full bg-slate-900 transition-all"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
-              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto pr-2 text-sm">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={
-                      message.role === "user"
-                        ? "ml-auto w-[86%] rounded-2xl border border-slate-300/70 bg-slate-900 px-4 py-3 text-white"
-                        : "w-[88%] rounded-2xl border border-slate-300/70 bg-white px-4 py-3 text-slate-800"
-                    }
-                  >
-                    {message.text}
-                  </div>
-                ))}
-                {isSending && (
-                  <div className="w-fit rounded-full border border-slate-300/70 bg-slate-50 px-3 py-1 text-xs text-slate-600">
-                    Sending to the claim graph...
-                  </div>
-                )}
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-3">
-              <div className="flex flex-wrap gap-2">
-                {files.map((file) => (
-                  <Badge
-                    key={file}
-                    className="border border-slate-300/70 bg-slate-50 text-slate-700"
-                  >
-                    {file}
-                  </Badge>
-                ))}
-                {tools.map((tool) => (
-                  <Badge
-                    key={tool}
-                    className="border border-slate-300/70 bg-white text-slate-700"
-                  >
-                    {tool}
-                  </Badge>
-                ))}
-              </div>
-              <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
-                <Input
-                  ref={inputRef}
-                  value={input}
-                  onChange={(event) => setInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  placeholder="Describe the invention detail or ask a question..."
-                  className="flex-1 border-slate-300/70 bg-white text-slate-900 placeholder:text-slate-500"
-                  disabled={isSending}
-                />
-                <div className="flex items-center gap-2">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    onChange={handleFilePick}
-                    className="hidden"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-slate-300/70 bg-white text-slate-700 hover:bg-slate-100"
-                  >
-                    <Paperclip className="size-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={handleAddTool}
-                    className="border-slate-300/70 bg-white text-slate-700 hover:bg-slate-100"
-                  >
-                    <Wrench className="size-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={handleSend}
-                    disabled={!input.trim() || isSending}
-                    className="bg-slate-900 text-white hover:bg-slate-800"
-                  >
-                    <Send className="size-4" />
-                    Send
-                  </Button>
-                </div>
-              </div>
-            </CardFooter>
-          </Card>
-        </section>
+    <div className="min-h-screen bg-[#f7f7f8] text-slate-900">
+      <div className="grid h-screen grid-cols-1 lg:grid-cols-[280px_1fr_280px]">
+        <TimelineAside />
 
-        <section className="flex min-h-0 flex-col">
-          <Card className="flex min-h-0 flex-1 flex-col border-slate-300/70 bg-white/85 shadow-xl shadow-slate-300/40 backdrop-blur">
-            <CardHeader className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <CardTitle className="text-2xl">Invention Review</CardTitle>
-                  <CardDescription className="text-slate-600">
-                    Your uploads are analyzed into evidence, gaps, and risks to
-                    prepare a filing-ready application.
-                  </CardDescription>
-                </div>
-                <Badge className="bg-slate-50 text-slate-700">
-                  Review view
-                </Badge>
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-                {[
-                  "Drag to rearrange",
-                  "Pin critical views",
-                  "Export data",
-                  "Share with counsel",
-                ].map((item) => (
-                  <span
-                    key={item}
-                    className="rounded-full border border-slate-300/60 bg-slate-50/80 px-3 py-1"
-                  >
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </CardHeader>
-            <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
-              <Card className="border-slate-300/70 bg-white">
-                <CardHeader className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-base text-slate-900">
-                        Intake Review
-                      </CardTitle>
-                      <CardDescription className="text-xs text-slate-500">
-                        Open questions, risks, and clarity gaps derived from uploads.
-                      </CardDescription>
-                    </div>
-                    <Badge className="bg-slate-50 text-slate-700">
-                      Needs responses
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="grid gap-3 text-sm text-slate-600 md:grid-cols-3">
-                  <div className="rounded-lg bg-slate-50/80 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Open Questions
-                    </p>
-                    <ul className="mt-2 flex flex-wrap gap-2">
-                      {openQuestions.map((item) => (
-                        <li key={item} className="rounded-md bg-white px-3 py-2">
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="rounded-lg bg-slate-50/80 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Detected Risks
-                    </p>
-                    <ul className="mt-2 flex flex-wrap gap-2">
-                      {detectedRisks.map((item) => (
-                        <li key={item} className="rounded-md bg-white px-3 py-2">
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="rounded-lg bg-slate-50/80 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Clarity Gaps
-                    </p>
-                    <ul className="mt-2 flex flex-wrap gap-2">
-                      {clarityGaps.map((item) => (
-                        <li key={item} className="rounded-md bg-white px-3 py-2">
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-              <div className="grid min-h-0 flex-1 auto-rows-[minmax(140px,auto)] grid-flow-dense gap-3 overflow-auto pr-2 md:grid-cols-3">
-                {widgets.map((widget, index) => {
-                  const Icon = widget.icon;
-                  const isDragging = dragIndex === index;
-                  const isDragOver = dragOverIndex === index;
-                  const isExpanded = expandedWidget === widget.title;
-                  return (
-                    <Card
-                      key={widget.title}
-                      className={`flex h-full flex-col border-slate-300/70 bg-white transition-all duration-300 ease-out ${
-                        isDragging
-                          ? "scale-[0.98] opacity-70 shadow-lg shadow-slate-200/80"
-                          : "shadow-sm shadow-slate-200/60"
-                      } ${isDragOver ? "ring-2 ring-slate-900/60" : ""} ${
-                        widgetLayout[widget.title] ?? "md:col-span-1 md:row-span-1"
-                      }`}
-                      draggable
-                      onDragStart={() => handleDragStart(index)}
-                      onDragEnd={handleDragEnd}
-                      onDragOver={(event) => {
-                        event.preventDefault();
-                        setDragOverIndex(index);
-                      }}
-                      onDragEnter={() => setDragOverIndex(index)}
-                      onDragLeave={() => {
-                        if (dragOverIndex === index) {
-                          setDragOverIndex(null);
-                        }
-                      }}
-                      onDrop={() => handleDrop(index)}
-                      onClick={() =>
-                        setExpandedWidget((prev) =>
-                          prev === widget.title ? null : widget.title
-                        )
-                      }
-                    >
-                      <CardHeader className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="grid size-9 place-items-center rounded-xl bg-slate-100/80">
-                              <Icon className="size-5 text-slate-700" />
-                            </div>
-                            <div>
-                              <CardTitle className="text-base text-slate-900">
-                                {widget.title}
-                              </CardTitle>
-                              <CardDescription className="text-xs text-slate-500">
-                                {widget.tag}
-                              </CardDescription>
-                            </div>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="min-h-0 flex-1 text-sm text-slate-600">
-                        <p className="break-words leading-snug">
-                          {widget.description}
-                        </p>
-                        {isExpanded && (
-                          <div className="mt-3 max-h-52 overflow-auto rounded-lg border border-slate-300/70 bg-slate-50/80 p-3 text-xs text-slate-600">
-                            {widget.title === "Uploaded Files" && (
-                              <div className="space-y-2">
-                                {files.map((file) => (
-                                  <div
-                                    key={file}
-                                    className="flex items-center justify-between rounded-md bg-white px-3 py-2"
-                                  >
-                                    <span className="break-words">{file}</span>
-                                    <Badge className="bg-slate-100 text-slate-600">
-                                      Linked
-                                    </Badge>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {widget.title === "Knowledge Graph" && (
-                              <div className="space-y-2">
-                                {[
-                                  "Core claim node connected to 6 components",
-                                  "Evidence links: 9",
-                                  "Open dependencies: 3",
-                                ].map((item) => (
-                                  <div
-                                    key={item}
-                                    className="rounded-md bg-white px-3 py-2"
-                                  >
-                                    {item}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {widget.title === "Feature Coverage" && (
-                              <div className="space-y-2">
-                                {[
-                                  "Core module: complete",
-                                  "Interface spec: partial",
-                                  "Fallback behavior: missing",
-                                ].map((item) => (
-                                  <div
-                                    key={item}
-                                    className="rounded-md bg-white px-3 py-2"
-                                  >
-                                    <span className="break-words">{item}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {widget.title === "Risks & Red Flags" && (
-                              <div className="space-y-2">
-                                {detectedRisks.map((item) => (
-                                  <div
-                                    key={item}
-                                    className="rounded-md bg-white px-3 py-2"
-                                  >
-                                    {item}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {widget.title === "Ambiguities & Questions" && (
-                              <div className="space-y-2">
-                                {openQuestions.map((item) => (
-                                  <div
-                                    key={item}
-                                    className="rounded-md bg-white px-3 py-2"
-                                  >
-                                    {item}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {widget.title === "Consistency Checks" && (
-                              <div className="space-y-2">
-                                {[
-                                  "Term mismatch: sensor pipeline vs sensing stack",
-                                  "Diagram references missing appendix",
-                                  "Two modules share the same label",
-                                ].map((item) => (
-                                  <div
-                                    key={item}
-                                    className="rounded-md bg-white px-3 py-2"
-                                  >
-                                    {item}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {widget.title === "Evidence Map" && (
-                              <div className="space-y-2">
-                                {[
-                                  "Claim element A -> page 4, fig. 2",
-                                  "Claim element B -> spec section 3.1",
-                                  "Claim element C -> test data appendix",
-                                ].map((item) => (
-                                  <div
-                                    key={item}
-                                    className="rounded-md bg-white px-3 py-2"
-                                  >
-                                    {item}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {widget.title === "Application Readiness" && (
-                              <div className="space-y-2">
-                                {[
-                                  "Enablement: 72%",
-                                  "Claim clarity: 68%",
-                                  "Support coverage: 81%",
-                                ].map((item) => (
-                                  <div
-                                    key={item}
-                                    className="rounded-md bg-white px-3 py-2"
-                                  >
-                                    {item}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {widget.title === "Cleaned Application" && (
-                              <div className="space-y-2">
-                                {[
-                                  "Normalized 14 terms",
-                                  "Merged duplicate components",
-                                  "Removed speculative language",
-                                ].map((item) => (
-                                  <div
-                                    key={item}
-                                    className="rounded-md bg-white px-3 py-2"
-                                  >
-                                    {item}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {widget.title === "Prior Art Signals" && (
-                              <div className="space-y-2">
-                                {[
-                                  "Similarity to US20xx/xxxxxx at 0.71",
-                                  "Potential overlap in sensing claim",
-                                  "Novelty note added to actuator module",
-                                ].map((item) => (
-                                  <div
-                                    key={item}
-                                    className="rounded-md bg-white px-3 py-2"
-                                  >
-                                    {item}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {widget.title === "Summary Brief" && (
-                              <div className="space-y-2">
-                                {[
-                                  "Core value: automated detection + actuation",
-                                  "Primary novelty: adaptive control loop",
-                                  "Primary use: field-scale deployments",
-                                ].map((item) => (
-                                  <div
-                                    key={item}
-                                    className="rounded-md bg-white px-3 py-2"
-                                  >
-                                    {item}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {widget.title === "Export Package" && (
-                              <div className="space-y-2">
-                                {[
-                                  "Claims draft: prepared",
-                                  "Figures list: pending",
-                                  "Support matrix: prepared",
-                                ].map((item) => (
-                                  <div
-                                    key={item}
-                                    className="rounded-md bg-white px-3 py-2"
-                                  >
-                                    {item}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-      </main>
+        <main className="flex h-full flex-col overflow-hidden">
+          <HeaderBar />
+          <MessageList
+            messages={messages}
+            isSending={isSending}
+            endOfMessagesRef={endOfMessagesRef}
+            fileInputRef={fileInputRef}
+            quickQuestions={quickQuestions}
+            optionQuestions={optionQuestions}
+            files={files}
+            onQuickInsert={handleQuickInsert}
+          />
+          <FooterBar
+            files={files}
+            tools={tools}
+            input={input}
+            isSending={isSending}
+            inputRef={inputRef}
+            fileInputRef={fileInputRef}
+            onInputChange={setInput}
+            onSend={handleSend}
+            onAddTool={handleAddTool}
+            onFilePick={handleFilePick}
+          />
+        </main>
+
+        <FilesAside files={files} />
+      </div>
     </div>
   );
 }
